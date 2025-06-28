@@ -1,0 +1,1 @@
+worker: python hanuko_bot.py

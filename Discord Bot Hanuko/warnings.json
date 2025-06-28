@@ -1,0 +1,82 @@
+{
+    "896665836415238164": [
+        "too good",
+        "too good",
+        "too good",
+        "too good",
+        "too good",
+        {
+            "reason": "Used bad words: fuck",
+            "moderator": 1387618208697290773,
+            "timestamp": "2025-06-26T06:49:29.724140"
+        },
+        {
+            "reason": "Used bad words: nigger",
+            "moderator": 1387618208697290773,
+            "timestamp": "2025-06-26T06:54:32.287804"
+        },
+        {
+            "reason": "Used bad words: nigger",
+            "moderator": 1387618208697290773,
+            "timestamp": "2025-06-26T07:16:18.219619"
+        },
+        {
+            "reason": "Used bad words: fuck",
+            "moderator": 1387733217225871490,
+            "timestamp": "2025-06-27T07:56:35.812551"
+        }
+    ],
+    "1365713765852778657": [
+        "sdasd"
+    ],
+    "1249625975776350323": [
+        {
+            "reason": "fdasda",
+            "moderator": 896665836415238164,
+            "timestamp": "2025-06-26T06:06:36.022216"
+        }
+    ],
+    "1109386678822518855": [
+        {
+            "reason": "Used bad words: fag, faggot",
+            "moderator": 1387618208697290773,
+            "timestamp": "2025-06-26T07:20:35.504033"
+        }
+    ],
+    "1380433562272010290": [
+        {
+            "reason": "Used bad words: hell",
+            "moderator": 1387733217225871490,
+            "timestamp": "2025-06-26T16:38:06.151600"
+        },
+        {
+            "reason": "Used bad words: hell",
+            "moderator": 1387733217225871490,
+            "timestamp": "2025-06-26T16:39:38.763881"
+        }
+    ],
+    "1387733217225871490": [
+        {
+            "reason": "dfd",
+            "moderator": 896665836415238164,
+            "timestamp": "2025-06-27T06:50:48.273240"
+        }
+    ],
+    "1116711814990929961": [
+        {
+            "reason": "Used bad words: fuck",
+            "moderator": 1387733217225871490,
+            "timestamp": "2025-06-27T08:38:21.728208"
+        },
+        {
+            "reason": "Used bad words: shit",
+            "moderator": 1387733217225871490,
+            "timestamp": "2025-06-27T08:38:51.453799"
+        },
+        {
+            "reason": "Used bad words: bitch",
+            "moderator": 1387733217225871490,
+            "timestamp": "2025-06-27T08:38:53.474272"
+        }
+    ]
+}

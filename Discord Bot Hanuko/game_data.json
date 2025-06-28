@@ -1,0 +1,23 @@
+{
+    "896665836415238164": {
+        "xp": 0,
+        "level": 1,
+        "credits": 0,
+        "pets": [],
+        "inventory": [],
+        "equipped_weapon": null,
+        "last_daily": null,
+        "last_weekly": null,
+        "achievements": [],
+        "pet_stats": {},
+        "pet_last_train": {},
+        "mission_progress": {
+            "mission": 0,
+            "step": 0
+        },
+        "quiz_last": null,
+        "team": null,
+        "team_role": null,
+        "team_points": 0
+    }
+}
