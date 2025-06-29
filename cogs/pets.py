@@ -52,7 +52,21 @@ PETS = [
     {"name": "Chinchilla", "rarity": "Uncommon", "hp": 69, "atk": 13},
     {"name": "SCP-3812 Reality Wanderer", "rarity": "Mythic", "hp": 150, "atk": 40},
     {"name": "SCP-343 The Friendly God", "rarity": "Mythic", "hp": 145, "atk": 38},
-    {"name": "SCP-001 The Gate Guardian", "rarity": "Classified", "hp": 200, "atk": 50}
+    {"name": "SCP-001 The Gate Guardian", "rarity": "Classified", "hp": 200, "atk": 50},
+    # New Epic SCPs (2 more)
+    {"name": "SCP-1471 MalO", "rarity": "Epic", "hp": 108, "atk": 25},
+    {"name": "SCP-173 The Sculpture", "rarity": "Epic", "hp": 112, "atk": 28},
+    # New Legendary SCPs (4 more)
+    {"name": "SCP-096 The Shy Guy", "rarity": "Legendary", "hp": 125, "atk": 35},
+    {"name": "SCP-049 The Plague Doctor", "rarity": "Legendary", "hp": 118, "atk": 0},
+    {"name": "SCP-106 The Old Man", "rarity": "Legendary", "hp": 122, "atk": 33},
+    {"name": "SCP-035 The Possessive Mask", "rarity": "Legendary", "hp": 116, "atk": 29},
+    # New Mythic SCPs (3 more)
+    {"name": "SCP-239 The Witch Child", "rarity": "Mythic", "hp": 155, "atk": 42},
+    {"name": "SCP-682 The Hard-to-Destroy Reptile", "rarity": "Mythic", "hp": 160, "atk": 45},
+    {"name": "SCP-001 The Scarlet King", "rarity": "Mythic", "hp": 165, "atk": 48},
+    # New Classified SCP (1 more)
+    {"name": "SCP-001 The Factory", "rarity": "Classified", "hp": 220, "atk": 55}
 ]
 
 # Example rarity weights for regular and premium gacha
@@ -114,7 +128,21 @@ PET_RARITIES = {
     "SCP-3812 Reality Wanderer": "Mythic",
     "SCP-343 The Friendly God": "Mythic",
     # New Classified pet
-    "SCP-001 The Gate Guardian": "Classified"
+    "SCP-001 The Gate Guardian": "Classified",
+    # New Epic SCPs
+    "SCP-1471 MalO": "Epic",
+    "SCP-173 The Sculpture": "Epic",
+    # New Legendary SCPs
+    "SCP-096 The Shy Guy": "Legendary",
+    "SCP-049 The Plague Doctor": "Legendary",
+    "SCP-106 The Old Man": "Legendary",
+    "SCP-035 The Possessive Mask": "Legendary",
+    # New Mythic SCPs
+    "SCP-239 The Witch Child": "Mythic",
+    "SCP-682 The Hard-to-Destroy Reptile": "Mythic",
+    "SCP-001 The Scarlet King": "Mythic",
+    # New Classified SCP
+    "SCP-001 The Factory": "Classified"
 }
 
 PET_ADOPT_COST = 250
@@ -311,16 +339,16 @@ class Pets(commands.Cog):
         user_data = get_user(interaction.user.id)
         opp_data = get_user(opponent.id)
         
-        # Check if both users have at least 3 pets
+        # Check if both users have at least 1 pet
         user_pets = user_data.get("pets", [])
         opp_pets = opp_data.get("pets", [])
         
-        if len(user_pets) < 3:
-            await interaction.response.send_message(f"❌ You need at least 3 pets to participate in pet battles. You have {len(user_pets)} pets.", ephemeral=True)
+        if len(user_pets) < 1:
+            await interaction.response.send_message(f"❌ You need at least 1 pet to participate in pet battles. You have {len(user_pets)} pets.", ephemeral=True)
             return
             
-        if len(opp_pets) < 3:
-            await interaction.response.send_message(f"❌ {opponent.display_name} needs at least 3 pets to participate in pet battles. They have {len(opp_pets)} pets.", ephemeral=True)
+        if len(opp_pets) < 1:
+            await interaction.response.send_message(f"❌ {opponent.display_name} needs at least 1 pet to participate in pet battles. They have {len(opp_pets)} pets.", ephemeral=True)
             return
         
         # Get battle pets based on mode
@@ -330,15 +358,15 @@ class Pets(commands.Cog):
             opp_battle_pets = opp_data.get("battle_team", [])
             
             # If no battle team set, use equipped pets as fallback
-            if len(user_battle_pets) < 3:
+            if len(user_battle_pets) < 1:
                 user_battle_pets = user_data.get("equipped_pets", [])
-                if len(user_battle_pets) < 3:
-                    user_battle_pets = user_pets[:3]
+                if len(user_battle_pets) < 1:
+                    user_battle_pets = user_pets[:1]  # Use at least 1 pet
                     
-            if len(opp_battle_pets) < 3:
+            if len(opp_battle_pets) < 1:
                 opp_battle_pets = opp_data.get("equipped_pets", [])
-                if len(opp_battle_pets) < 3:
-                    opp_battle_pets = opp_pets[:3]
+                if len(opp_battle_pets) < 1:
+                    opp_battle_pets = opp_pets[:1]  # Use at least 1 pet
                     
         else:
             # Manual mode - would need to be implemented with pet selection
@@ -358,7 +386,7 @@ class Pets(commands.Cog):
         
         # Start the battle
         embed = discord.Embed(
-            title="🐾 Pet Battle: 3v3",
+            title="🐾 Pet Battle",
             description=f"{interaction.user.display_name} vs {opponent.display_name}",
             color=0xff6b6b
         )
@@ -367,8 +395,18 @@ class Pets(commands.Cog):
         user_team = "\n".join([f"• {pet}" for pet in user_battle_pets])
         opp_team = "\n".join([f"• {pet}" for pet in opp_battle_pets])
         
-        embed.add_field(name=f"{interaction.user.display_name}'s Team", value=user_team, inline=True)
-        embed.add_field(name=f"{opponent.display_name}'s Team", value=opp_team, inline=True)
+        embed.add_field(name=f"{interaction.user.display_name}'s Team ({len(user_battle_pets)} pets)", value=user_team, inline=True)
+        embed.add_field(name=f"{opponent.display_name}'s Team ({len(opp_battle_pets)} pets)", value=opp_team, inline=True)
+        
+        # Add warnings for smaller teams
+        warnings = []
+        if len(user_battle_pets) < 3:
+            warnings.append(f"⚠️ {interaction.user.display_name} has fewer than 3 pets - this is a disadvantage!")
+        if len(opp_battle_pets) < 3:
+            warnings.append(f"⚠️ {opponent.display_name} has fewer than 3 pets - this is a disadvantage!")
+        
+        if warnings:
+            embed.add_field(name="Battle Warnings", value="\n".join(warnings), inline=False)
         
         await interaction.response.send_message(embed=embed)
         
@@ -648,27 +686,28 @@ class Pets(commands.Cog):
             for pet in owned_pets if current.lower() in pet.lower()
         ][:25]  # Discord max autocomplete options
 
-    @app_commands.command(name="petbattleteam", description="Set up your pet battle team (3 pets for 3v3 battles)")
+    @app_commands.command(name="petbattleteam", description="Set up your pet battle team (1-3 pets for battles)")
     @app_commands.autocomplete(pet=petbattleteam_autocomplete)
     async def petbattleteam(self, interaction: discord.Interaction):
         print(f"[DEBUG] /petbattleteam called by {interaction.user}")
         user_data = get_user(interaction.user.id)
         owned_pets = user_data.get("pets", [])
         
-        if len(owned_pets) < 3:
-            await interaction.response.send_message(f"❌ You need at least 3 pets to create a battle team. You have {len(owned_pets)} pets.", ephemeral=True)
+        if len(owned_pets) < 1:
+            await interaction.response.send_message(f"❌ You need at least 1 pet to create a battle team. You have {len(owned_pets)} pets.", ephemeral=True)
             return
         
-        # Create a view with a select menu for 3 pets
+        # Create a view with a select menu for 1-3 pets
         class BattleTeamSelect(ui.View):
             def __init__(self, user_id, owned_pets):
                 super().__init__(timeout=60)
                 self.user_id = user_id
                 self.owned_pets = owned_pets
-                # Build select options for exactly 3 pets
+                # Build select options for 1-3 pets
                 options = [discord.SelectOption(label=pet, value=pet) for pet in owned_pets]
-                # Add the select menu - require exactly 3 selections
-                select = ui.Select(placeholder="Choose exactly 3 pets for your battle team", min_values=3, max_values=3, options=options)
+                # Add the select menu - allow 1-3 selections
+                max_selections = min(3, len(owned_pets))
+                select = ui.Select(placeholder=f"Choose 1-{max_selections} pets for your battle team", min_values=1, max_values=max_selections, options=options)
                 select.callback = self.select_callback
                 self.add_item(select)
             
@@ -689,7 +728,7 @@ class Pets(commands.Cog):
                 update_user(self.user_id, battle_team=selected_pets)
                 
                 # Create embed showing battle team
-                embed = discord.Embed(title="⚔️ Battle Team Set!", description="Your 3v3 pet battle team:", color=0xff6b6b)
+                embed = discord.Embed(title="⚔️ Battle Team Set!", description="Your pet battle team:", color=0xff6b6b)
                 
                 for i, pet in enumerate(selected_pets, 1):
                     pet_obj = get_pet_by_name(pet)
@@ -698,6 +737,15 @@ class Pets(commands.Cog):
                         value=f"Rarity: {pet_obj['rarity']} | HP: {pet_obj['hp']} | ATK: {pet_obj['atk']}",
                         inline=False
                     )
+                
+                # Warning message for fewer pets
+                if len(selected_pets) < 3:
+                    embed.add_field(
+                        name="⚠️ Warning",
+                        value=f"You have set {len(selected_pets)} pet(s) in your battle team. Having fewer than 3 pets puts you at a disadvantage in 3v3 battles!",
+                        inline=False
+                    )
+                    embed.color = 0xffa500  # Orange for warning
                 
                 embed.set_footer(text="Use /petbattle to challenge other players!")
                 
@@ -722,12 +770,128 @@ class Pets(commands.Cog):
                         value=f"Rarity: {pet_obj['rarity']} | HP: {pet_obj['hp']} | ATK: {pet_obj['atk']}",
                         inline=False
                     )
+            
+            # Show warning if current team has fewer than 3 pets
+            if len(current_team) < 3:
+                embed.add_field(
+                    name="⚠️ Current Team Status",
+                    value=f"Your current team has {len(current_team)} pet(s). Consider adding more pets for better battle performance!",
+                    inline=False
+                )
         else:
-            embed.add_field(name="No Battle Team Set", value="Select 3 pets below to create your battle team!", inline=False)
+            embed.add_field(name="No Battle Team Set", value=f"Select 1-{min(3, len(owned_pets))} pets below to create your battle team!", inline=False)
         
         # Add dropdown to select battle team
         view = BattleTeamSelect(interaction.user.id, owned_pets)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    @app_commands.command(name="adoptpet10x", description="Adopt 10 random pets at once (5% discount)")
+    async def adoptpet10x(self, interaction: discord.Interaction):
+        print(f"[DEBUG] /adoptpet10x called by {interaction.user}")
+        user_data = get_user(interaction.user.id)
+        
+        # Calculate cost with 5% discount
+        base_cost = PET_ADOPT_COST * 10  # 10 pets at 250 each = 2,500
+        discounted_cost = int(base_cost * 0.95)  # 5% discount = 2,375
+        
+        if user_data.get("credits", 0) < discounted_cost:
+            await interaction.response.send_message(f"❌ You need {discounted_cost} credits for 10x pet adoption. You have {user_data.get('credits', 0)} credits.", ephemeral=True)
+            return
+        
+        # Deduct credits
+        update_user(interaction.user.id, credits=user_data.get("credits", 0) - discounted_cost)
+        
+        # Get 10 random pets
+        adopted_pets = []
+        for _ in range(10):
+            pet = random.choice(list(pets.values()))
+            adopted_pets.append(pet["name"])
+        
+        # Add pets to user's collection
+        user_pets = user_data.get("pets", [])
+        user_pets.extend(adopted_pets)
+        update_user(interaction.user.id, pets=user_pets)
+        
+        # Create embed
+        embed = discord.Embed(
+            title="🐾 10x Pet Adoption Complete!",
+            description=f"You adopted 10 pets for {discounted_cost} credits (5% discount applied)",
+            color=0x2ecc71
+        )
+        
+        # Group pets by rarity for display
+        rarity_counts = {}
+        for pet_name in adopted_pets:
+            pet = pets.get(pet_name)
+            if pet:
+                rarity = pet["rarity"]
+                rarity_counts[rarity] = rarity_counts.get(rarity, 0) + 1
+        
+        # Display pets by rarity
+        for rarity in ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"]:
+            if rarity in rarity_counts:
+                embed.add_field(
+                    name=f"{rarity} ({rarity_counts[rarity]})",
+                    value=", ".join([pet for pet in adopted_pets if pets.get(pet, {}).get("rarity") == rarity]),
+                    inline=False
+                )
+        
+        embed.set_footer(text=f"Total pets owned: {len(user_pets)}")
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="premiumpets10x", description="Adopt 10 premium pets at once (5% discount)")
+    async def premiumpets10x(self, interaction: discord.Interaction):
+        print(f"[DEBUG] /premiumpets10x called by {interaction.user}")
+        user_data = get_user(interaction.user.id)
+        
+        # Calculate cost with 5% discount
+        base_cost = PREMIUM_PET_COST * 10  # 10 premium pets at 1000 each = 10,000
+        discounted_cost = int(base_cost * 0.95)  # 5% discount = 9,500
+        
+        if user_data.get("credits", 0) < discounted_cost:
+            await interaction.response.send_message(f"❌ You need {discounted_cost} credits for 10x premium pet adoption. You have {user_data.get('credits', 0)} credits.", ephemeral=True)
+            return
+        
+        # Deduct credits
+        update_user(interaction.user.id, credits=user_data.get("credits", 0) - discounted_cost)
+        
+        # Get 10 random premium pets
+        adopted_pets = []
+        for _ in range(10):
+            pet = random.choice(list(pets.values()))
+            adopted_pets.append(pet["name"])
+        
+        # Add pets to user's collection
+        user_pets = user_data.get("pets", [])
+        user_pets.extend(adopted_pets)
+        update_user(interaction.user.id, pets=user_pets)
+        
+        # Create embed
+        embed = discord.Embed(
+            title="🌟 10x Premium Pet Adoption Complete!",
+            description=f"You adopted 10 premium pets for {discounted_cost} credits (5% discount applied)",
+            color=0xf39c12
+        )
+        
+        # Group pets by rarity for display
+        rarity_counts = {}
+        for pet_name in adopted_pets:
+            pet = pets.get(pet_name)
+            if pet:
+                rarity = pet["rarity"]
+                rarity_counts[rarity] = rarity_counts.get(rarity, 0) + 1
+        
+        # Display pets by rarity
+        for rarity in ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Classified"]:
+            if rarity in rarity_counts:
+                embed.add_field(
+                    name=f"{rarity} ({rarity_counts[rarity]})",
+                    value=", ".join([pet for pet in adopted_pets if pets.get(pet, {}).get("rarity") == rarity]),
+                    inline=False
+                )
+        
+        embed.set_footer(text=f"Total pets owned: {len(user_pets)}")
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Pets(bot)) 

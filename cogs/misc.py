@@ -404,9 +404,11 @@ class Misc(commands.Cog):
             ("/inventory", "View your inventory."),
             ("/setrole", "Assign yourself a custom role from the allowed list."),
             ("/listcustomroles", "List all assignable custom roles for this server."),
-            ("/petbattle", "Battle your pets against another user's pets in 3v3 mode. Uses your battle team or equipped pets automatically. Usage: /petbattle opponent:@User [mode:auto]"),
+            ("/petbattle", "Battle your pets against another user's pets (1-3 pets per team). Uses your battle team or equipped pets automatically. Usage: /petbattle opponent:@User [mode:auto]"),
             ("/adoptpet", "Adopt a random pet (gacha). Usage: /adoptpet"),
+            ("/adoptpet10x", "Adopt 10 random pets at once with 5% discount (2,375 credits instead of 2,500). Usage: /adoptpet10x"),
             ("/premiumpets", "Adopt a premium pet (gacha). Usage: /premiumpets"),
+            ("/premiumpets10x", "Adopt 10 premium pets at once with 5% discount (9,500 credits instead of 10,000). Usage: /premiumpets10x"),
             ("/quest", "View and claim your daily, weekly, and monthly quest rewards."),
             ("/marketplace list", "List an item for sale on the marketplace."),
             ("/marketplace browse", "Browse all items for sale on the marketplace."),
@@ -457,7 +459,7 @@ class Misc(commands.Cog):
             # Economy & Shop
             embed.add_field(name="__Economy & Shop__", value="/shop, /buy\n/inventory, /inv\n/equipgun", inline=False)
             # Pets
-            embed.add_field(name="__Pets__", value="/adoptpet, /premiumpets\n/petbattle (3v3 auto mode)\n/petbattleteam (set battle team)\n/equippet, /unequippet, /equippedpets\n/trainpet, /releasepet, /pets", inline=False)
+            embed.add_field(name="__Pets__", value="/adoptpet, /adoptpet10x\n/premiumpets, /premiumpets10x\n/petbattle (1-3 pets, auto mode)\n/petbattleteam (set 1-3 pets)\n/equippet, /unequippet, /equippedpets\n/trainpet, /releasepet, /pets", inline=False)
             # Roles & Teams
             embed.add_field(name="__Roles & Teams__", value="/setrole, /listcustomroles\n/team, /jointeam, /leaveteam, /inviteteam", inline=False)
             # Marketplace & Trading
@@ -488,11 +490,13 @@ class Misc(commands.Cog):
             "inv": "Alias for /inventory.",
             "setrole": "Assign yourself a custom role from the allowed list. Usage: /setrole role_name:<role>",
             "listcustomroles": "List all assignable custom roles for this server. Usage: /listcustomroles",
-            "petbattle": "Battle your pets against another user's pets in 3v3 mode. Uses your battle team or equipped pets automatically. Usage: /petbattle opponent:@User [mode:auto]",
-            "petbattleteam": "Set up your pet battle team (3 pets for 3v3 battles). Usage: /petbattleteam",
+            "petbattle": "Battle your pets against another user's pets (1-3 pets per team). Uses your battle team or equipped pets automatically. Usage: /petbattle opponent:@User [mode:auto]",
+            "petbattleteam": "Set up your pet battle team (1-3 pets for battles). Usage: /petbattleteam",
             "equippedpets": "View and manage your equipped pets (up to 2 slots). Usage: /equippedpets",
             "adoptpet": "Adopt a random pet (gacha). Usage: /adoptpet",
+            "adoptpet10x": "Adopt 10 random pets at once with 5% discount (2,375 credits instead of 2,500). Usage: /adoptpet10x",
             "premiumpets": "Adopt a premium pet (gacha). Usage: /premiumpets",
+            "premiumpets10x": "Adopt 10 premium pets at once with 5% discount (9,500 credits instead of 10,000). Usage: /premiumpets10x",
             "quest": "View and claim your daily, weekly, and monthly quest rewards. Usage: /quest",
             "marketplace list": "List an item for sale on the marketplace. Usage: /marketplace_list item:<item> price:<amount>",
             "marketplace browse": "Browse all items for sale on the marketplace. Usage: /marketplace_browse",

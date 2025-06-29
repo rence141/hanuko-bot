@@ -9,6 +9,7 @@ A comprehensive SCP Foundation-themed Discord bot with gaming mechanics, economy
 - **Daily & Weekly Rewards**: Claim regular rewards to build your wealth
 - **Leveling System**: Gain XP and level up your character
 - **Leaderboards**: Compete with other players for top spots
+- **Global Leaderboard**: View top players across all servers
 
 ### 🏪 Economy & Trading
 - **SCP Shop**: Purchase items like Containment Suits, Keycards, and more
@@ -18,9 +19,13 @@ A comprehensive SCP Foundation-themed Discord bot with gaming mechanics, economy
 
 ### 🐾 Pet System
 - **Pet Adoption**: Adopt random pets through gacha mechanics
+- **10x Pet Adoption**: Bulk adopt 10 pets at once with 5% discount
 - **Premium Pets**: Special high-tier pets for dedicated players
-- **Pet Battles**: Battle your pets against other users' pets
+- **10x Premium Pets**: Bulk adopt 10 premium pets with 5% discount
+- **Flexible Pet Battles**: Battle with 1-3 pets per team (no longer requires exactly 3)
+- **Battle Teams**: Set up custom battle teams for strategic combat
 - **Pet Management**: Train, equip, unequip, and release pets
+- **Pet Comparison**: Compare stats between different pets
 
 ### 🎲 Gambling & Entertainment
 - **SCP-914**: Gamble with different settings (rough, coarse, 1:1, fine, very fine)
@@ -38,6 +43,7 @@ A comprehensive SCP Foundation-themed Discord bot with gaming mechanics, economy
 - **Warning System**: Track and manage user warnings
 - **Custom Roles**: Create and assign custom server roles
 - **Team System**: Join teams and collaborate with other players
+- **Moderation Logging**: Log all moderation actions to designated channels
 
 ### AFK System
 
@@ -152,6 +158,37 @@ Advanced chat protection with multiple detection methods:
 4. Users receive notifications when their messages are removed
 5. View current settings with `/automodstatus`
 
+## 🐾 Pet Collection
+
+### Pet Rarities
+- **Common**: 4 pets (60% chance in regular pulls)
+- **Uncommon**: 8 pets (25% chance in regular pulls)
+- **Rare**: 8 pets (10% chance in regular pulls)
+- **Epic**: 7 pets (4% chance in regular pulls)
+- **Legendary**: 6 pets (1% chance in regular pulls)
+- **Mythic**: 5 pets (5% chance in premium pulls)
+- **Classified**: 2 pets (1% chance in premium pulls)
+
+### Notable SCP Pets
+- **SCP-999**: Legendary healing pet
+- **SCP-049**: Legendary Plague Doctor (healing abilities, 0 ATK)
+- **SCP-096**: Legendary Shy Guy
+- **SCP-173**: Epic Sculpture
+- **SCP-682**: Mythic Hard-to-Destroy Reptile
+- **SCP-001**: Classified Gate Guardian and Factory
+
+### Pet Adoption Costs
+- **Regular Pet**: 250 credits
+- **10x Regular Pets**: 2,375 credits (5% discount)
+- **Premium Pet**: 1,000 credits
+- **10x Premium Pets**: 9,500 credits (5% discount)
+
+### Pet Battle System
+- **Flexible Teams**: Use 1-3 pets per battle team
+- **Battle Teams**: Set up custom teams for strategic combat
+- **Auto Mode**: Automatically use battle teams or equipped pets
+- **Team Warnings**: Get notified if your team has fewer than 3 pets
+
 ## 🚀 Setup
 
 ### Prerequisites
@@ -198,66 +235,47 @@ hanuko-bot/
 │   ├── teams.py         # Team system
 │   └── testcmd.py       # Testing commands
 ├── hanuko_bot.py        # Main bot file
-├── config.py            # Configuration (create this)
-├── db.py               # Database functions
+├── db.py                # Database functions
 ├── requirements.txt     # Python dependencies
 └── README.md           # This file
 ```
 
-## 🎯 Key Commands
+## 🔧 Recent Updates
 
-### General
-- `/profile` - View your profile
-- `/mission` - Complete missions
-- `/daily` - Claim daily rewards
-- `/weekly` - Claim weekly rewards
-- `/leaderboard` - View top players
+### Latest Features (v2.0+)
+- **10x Pet Adoption**: Bulk adopt pets with 5% discount
+- **Flexible Pet Battles**: Battle with 1-3 pets instead of requiring exactly 3
+- **Battle Teams**: Set up custom battle teams for strategic combat
+- **New SCP Pets**: Added 10+ new SCP-themed pets across all rarities
+- **Global Leaderboard**: View top players across all servers
+- **Moderation Logging**: Log all moderation actions to designated channels
+- **Enhanced Pet System**: Improved pet management and battle mechanics
+- **Voice Support**: Added PyNaCl for voice channel capabilities
+- **Dynamic Presence**: SCP-themed Discord presence cycling
 
-### Economy
-- `/shop` - Browse the shop
-- `/buy` - Purchase items
-- `/inventory` - View your inventory
-- `/marketplace` - Trade with other players
+### Pet System Enhancements
+- **Multiple Equipped Pets**: Equip up to 2 pets simultaneously
+- **Pet Comparison**: Compare stats between different pets
+- **Battle Team Management**: Create and manage custom battle teams
+- **Flexible Battle Requirements**: No longer requires exactly 3 pets for battles
+- **Enhanced Pet Display**: Better visual representation of pet stats and rarities
 
-### Pets
-- `/adoptpet` - Adopt a random pet
-- `/premiumpets` - Adopt premium pets
-- `/petbattle` - Battle other pets
-- `/pets` - Manage your pets
-
-### Events
-- `/containmentsuit` - Use during SCP-008 breaches
-- `/claimvault` - Claim airdropped vaults
-- `/quest` - View and claim quests
-
-## 🔧 Configuration
-
-The bot uses several JSON files for data storage:
-- `game_data.json` - Game configuration
-- `teams.json` - Team data
-- `marketplace.json` - Marketplace listings
-- `warnings.json` - User warnings
-- And more...
+### Economy Improvements
+- **Bulk Purchases**: 10x adoption commands with discounts
+- **Better Pricing**: Corrected costs for all pet adoption options
+- **Enhanced Trading**: Improved marketplace and trading systems
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 👨‍💻 Creator
+## 🆘 Support
 
-**Rence / notreiiii**
-
-## ⭐ Support
-
-If you find this bot useful, please give it a star! For support, join our Discord server or open an issue on GitHub.
+If you need help or have questions, please open an issue on GitHub or contact the bot owner.
 
 ---
 
