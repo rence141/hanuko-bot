@@ -431,8 +431,19 @@ class Misc(commands.Cog):
             embed.add_field(name=name, value=desc, inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    async def help_command_autocomplete(self, interaction: discord.Interaction, current: str):
+        # List of all available commands for autocomplete
+        command_names = [
+            "profile", "mission", "daily", "weekly", "leaderboard", "shop", "buy", "inventory", "inv", "setrole", "listcustomroles", "petbattle", "adoptpet", "premiumpets", "quest", "marketplace list", "marketplace browse", "marketplace buy", "trade", "checkcredits", "bal", "lb", "afk", "return", "afklist", "serverinfo", "poll", "vote", "pollresults", "endpoll", "listpolls", "equipgun", "equippet", "unequippet", "comparepet", "gleaderboard"
+        ]
+        return [
+            app_commands.Choice(name=cmd, value=cmd)
+            for cmd in command_names if current.lower() in cmd.lower()
+        ][:25]
+
     @app_commands.command(name="help", description="Show help for all player commands or a specific command")
     @app_commands.describe(command="(Optional) The command to get detailed help for")
+    @app_commands.autocomplete(command=help_command_autocomplete)
     @slowmode.__func__()
     async def help(self, interaction: discord.Interaction, command: str = None):
         if not command:
@@ -526,9 +537,11 @@ class Misc(commands.Cog):
             embed.add_field(name="Items", value="No items yet. Use /shop and /buy!", inline=False)
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="modhelp", description="Show help for moderator commands")
+    @app_commands.command(name="modhelp", description="Show help for moderator commands or a specific mod command")
+    @app_commands.describe(command="(Optional) The mod command to get detailed help for")
+    @app_commands.autocomplete(command=help_command_autocomplete)
     @slowmode.__func__()
-    async def modhelp(self, interaction: discord.Interaction):
+    async def modhelp(self, interaction: discord.Interaction, command: str = None):
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("You do not have administrator permissions to view these commands.", ephemeral=True)
             return
