@@ -349,12 +349,25 @@ class Shop(commands.Cog):
         }
         trades.append(trade)
         save_trades(trades)
-        # Notify both users
-        await interaction.response.send_message(f"✅ Trade proposed to {user.mention}! (Trade ID: {trade_id})\nThey must confirm with `/confirmtrade trade_id:{trade_id}`.", ephemeral=True)
+        # Notify initiator only (ephemeral)
+        await interaction.response.send_message(f"✅ Trade proposed to {user.display_name}! (Trade ID: {trade_id})\nThey must confirm with `/confirmtrade trade_id:{trade_id}`.", ephemeral=True)
+        # DM the recipient
         try:
-            await user.send(f"{interaction.user.display_name} has proposed a trade with you! Use `/confirmtrade trade_id:{trade_id}` to accept.")
+            trade_details = f"{interaction.user.display_name} has proposed a trade with you!\n"
+            if offer_item:
+                trade_details += f"• They offer item: {offer_item}\n"
+            if offer_pet:
+                trade_details += f"• They offer pet: {offer_pet}\n"
+            if request_item:
+                trade_details += f"• They want item: {request_item}\n"
+            if request_pet:
+                trade_details += f"• They want pet: {request_pet}\n"
+            if request_credits:
+                trade_details += f"• They want credits: {request_credits}\n"
+            trade_details += f"\nTo accept, use `/confirmtrade trade_id:{trade_id}` in the server."
+            await user.send(trade_details)
         except Exception:
-            pass
+            await interaction.followup.send(f"Could not DM {user.display_name}. They may have DMs disabled.", ephemeral=True)
 
     @app_commands.command(name="confirmtrade", description="Confirm and execute a pending trade by trade ID.")
     @app_commands.describe(trade_id="The ID of the trade to confirm")
@@ -413,7 +426,7 @@ class Shop(commands.Cog):
         # Remove trade
         trades = [t for t in trades if t["id"] != trade_id]
         save_trades(trades)
-        await interaction.response.send_message(f"✅ Trade completed! Items, pets, and credits have been exchanged.", ephemeral=True)
+        await interaction.response.send_message(f"✅ Trade completed between <@{trade['from_id']}> and <@{trade['to_id']}>! Items, pets, and credits have been exchanged.", ephemeral=False)
         # Optionally notify the offerer
         try:
             offerer = interaction.guild.get_member(trade["from_id"])

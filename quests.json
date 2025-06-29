@@ -2,7 +2,14 @@
     "896665836415238164": {
         "daily": {
             "date": "2025-06-28",
-            "recontain": 34,
+            "recontain": 37,
+            "claimed": false
+        }
+    },
+    "1380433562272010290": {
+        "daily": {
+            "date": "2025-06-28",
+            "recontain": 12,
             "claimed": false
         }
     }

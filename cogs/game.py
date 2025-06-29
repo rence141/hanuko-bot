@@ -13,22 +13,17 @@ import calendar
 import time
 
 SCP_LIST = [
-    {"name": "SCP-173", "hp": 60, "atk": 15, "desc": "The Sculpture. Snaps necks when not observed."},
-    {"name": "SCP-049", "hp": 80, "atk": 10, "desc": "The Plague Doctor. Wants to cure you."},
-    {"name": "SCP-096", "hp": 100, "atk": 20, "desc": "The Shy Guy. Goes berserk if seen."},
-    {"name": "SCP-939", "hp": 70, "atk": 12, "desc": "With Many Voices. Hunts by sound."},
-    {"name": "SCP-008", "hp": 50, "atk": 8, "desc": "Zombie Plague. Infects on contact."},
-    {"name": "SCP-106", "hp": 120, "atk": 18, "desc": "The Old Man. Can phase through walls and corrode matter."},
-    {"name": "SCP-682", "hp": 200, "atk": 30, "desc": "Hard-to-Destroy Reptile. Hates all life."},
-    {"name": "SCP-035", "hp": 90, "atk": 16, "desc": "The Possessive Mask. Manipulates and controls hosts."},
-    {"name": "SCP-457", "hp": 110, "atk": 22, "desc": "The Burning Man. Composed of living fire."},
-    {"name": "SCP-610", "hp": 95, "atk": 14, "desc": "The Flesh That Hates. Spreads infection rapidly."},
-    {"name": "SCP-966", "hp": 80, "atk": 13, "desc": "Sleep Killer. Invisible to the naked eye."},
-    {"name": "SCP-1471", "hp": 85, "atk": 15, "desc": "MalO ver1.0.0. Haunts victims through a phone app."},
-    {"name": "SCP-999", "hp": 60, "atk": 5, "desc": "The Tickle Monster. Brings happiness!"},
-    {"name": "SCP-1048", "hp": 70, "atk": 12, "desc": "Builder Bear. Creates dangerous copies of itself."},
-    {"name": "SCP-1782", "hp": 130, "atk": 25, "desc": "Tabula Rasa. A room that changes and resets itself."},
-    {"name": "SCP-3008", "hp": 150, "atk": 20, "desc": "Infinite IKEA. Filled with hostile staff."},
+    {"name": "SCP-173", "hp": 80, "atk": 15, "desc": "The Sculpture. Moves when not observed."},
+    {"name": "SCP-096", "hp": 120, "atk": 25, "desc": "The Shy Guy. Becomes enraged when seen."},
+    {"name": "SCP-106", "hp": 150, "atk": 30, "desc": "The Old Man. Can pass through matter."},
+    {"name": "SCP-049", "hp": 90, "atk": 18, "desc": "The Plague Doctor. Believes everyone is infected."},
+    {"name": "SCP-939", "hp": 110, "atk": 22, "desc": "With Many Voices. Mimics human speech."},
+    {"name": "SCP-999", "hp": 50, "atk": 5, "desc": "The Tickle Monster. Brings happiness!"},
+    {"name": "SCP-131", "hp": 30, "atk": 0, "desc": "The Eye Pods. Harmless and friendly."},
+    {"name": "SCP-529", "hp": 20, "atk": 0, "desc": "Josie the Half-Cat. Only the front half exists."},
+    {"name": "SCP-085", "hp": 25, "atk": 0, "desc": "Cassy. A sentient 2D drawing."},
+    {"name": "SCP-999-J", "hp": 10, "atk": 0, "desc": "The Joke Tickle Monster. Even less dangerous!"},
+    {"name": "SCP-040", "hp": 40, "atk": 0, "desc": "Evie. A child with anomalous abilities, but harmless."},
     {"name": "SCP-2521", "hp": 140, "atk": 28, "desc": "Can't be described in text. Takes those who speak about it."},
     {"name": "SCP-303", "hp": 75, "atk": 14, "desc": "The Doorman. Blocks passage and induces fear."},
     {"name": "SCP-178", "hp": 65, "atk": 11, "desc": "3D Specs. Allows you to see hostile entities."},
@@ -540,8 +535,8 @@ class Game(commands.Cog):
         damaged_items = user_data.get("damaged_items")
         if not isinstance(damaged_items, list):
             damaged_items = []
-        # Determine if rare dangerous battle (30% chance)
-        is_dangerous = random.random() < 0.3
+        # Determine if rare dangerous battle (10% chance)
+        is_dangerous = random.random() < 0.10
         if is_dangerous:
             scp = {
                 "name": "SCP-682 (Hard-to-Destroy Reptile)",

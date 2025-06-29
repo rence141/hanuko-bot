@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+DEPLOYMENT.md
+LICENSE
+
+# Discord bot specific files
+hanuko_bot.py
+config.py
+db.py
+cogs/
+requirements.txt
+Procfile
+render.yaml
+setup_render.py
+
+# Discord bot data files
+*.json
+*.png
+*.jpg
+*.jpeg
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Other
+.env
+*.log
+.DS_Store
+Thumbs.db 

@@ -315,65 +315,36 @@ class Misc(commands.Cog):
     @app_commands.command(name="serverinfo", description="Show detailed information about this server")
     @slowmode.__func__()
     async def serverinfo(self, interaction: discord.Interaction):
-        print(f"[DEBUG] /serverinfo called by {interaction.user}")
         guild = interaction.guild
-        
-        # Get server statistics
         total_members = guild.member_count
         online_members = len([m for m in guild.members if m.status != discord.Status.offline])
         bot_count = len([m for m in guild.members if m.bot])
         human_count = total_members - bot_count
-        
-        # Channel counts
         text_channels = len(guild.text_channels)
         voice_channels = len(guild.voice_channels)
         categories = len(guild.categories)
-        
-        # Role count
         role_count = len(guild.roles)
-        
-        # Server boost info
         boost_level = guild.premium_tier
         boost_count = guild.premium_subscription_count
-        
-        # Create embed
         embed = discord.Embed(
             title=f"🏠 Server Information: {guild.name}",
             color=discord.Color.blue()
         )
-        
         if guild.icon:
             embed.set_thumbnail(url=guild.icon.url)
-        
-        # Basic info
         embed.add_field(name="Owner", value=guild.owner.mention, inline=True)
         embed.add_field(name="Created", value=f"<t:{int(guild.created_at.timestamp())}:F>", inline=True)
         embed.add_field(name="Server ID", value=str(guild.id), inline=True)
-        
-        # Member stats
         embed.add_field(name="Total Members", value=f"{total_members:,}", inline=True)
         embed.add_field(name="Online Members", value=f"{online_members:,}", inline=True)
         embed.add_field(name="Humans", value=f"{human_count:,}", inline=True)
         embed.add_field(name="Bots", value=f"{bot_count:,}", inline=True)
-        
-        # Channel stats
         embed.add_field(name="Text Channels", value=text_channels, inline=True)
         embed.add_field(name="Voice Channels", value=voice_channels, inline=True)
         embed.add_field(name="Categories", value=categories, inline=True)
-        
-        # Other stats
         embed.add_field(name="Roles", value=role_count, inline=True)
         embed.add_field(name="Boost Level", value=f"Level {boost_level}", inline=True)
         embed.add_field(name="Boosts", value=boost_count, inline=True)
-        
-        # Features
-        if guild.features:
-            features = [feature.replace('_', ' ').title() for feature in guild.features]
-            embed.add_field(name="Features", value=", ".join(features[:5]), inline=False)
-            if len(features) > 5:
-                embed.add_field(name="More Features", value=", ".join(features[5:10]), inline=False)
-        
-        # Verification level
         verification_levels = {
             discord.VerificationLevel.none: "None",
             discord.VerificationLevel.low: "Low",
@@ -382,15 +353,6 @@ class Misc(commands.Cog):
             discord.VerificationLevel.highest: "Highest"
         }
         embed.add_field(name="Verification Level", value=verification_levels.get(guild.verification_level, "Unknown"), inline=True)
-        
-        # Content filter
-        content_filters = {
-            discord.ContentFilter.disabled: "Disabled",
-            discord.ContentFilter.no_role: "No Role",
-            discord.ContentFilter.all_members: "All Members"
-        }
-        embed.add_field(name="Content Filter", value=content_filters.get(guild.explicit_content_filter, "Unknown"), inline=True)
-        
         embed.set_footer(text=f"Requested by {interaction.user.display_name}")
         await interaction.response.send_message(embed=embed)
 
@@ -1169,6 +1131,18 @@ class Misc(commands.Cog):
         embed.set_footer(text="Use /pollresults <poll_id> to see results")
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="givecredits", description="Give credits to a user (admin only)")
+    @app_commands.describe(user="The user to give credits to", amount="The amount of credits to give")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def givecredits(self, interaction: discord.Interaction, user: discord.Member, amount: int):
+        if amount <= 0:
+            await interaction.response.send_message("Amount must be positive.", ephemeral=True)
+            return
+        user_data = get_user(user.id)
+        user_data["credits"] = user_data.get("credits", 0) + amount
+        update_user(user.id, credits=user_data["credits"])
+        await interaction.response.send_message(f"Gave {amount} credits to {user.mention}. New balance: {user_data['credits']}", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Misc(bot))
