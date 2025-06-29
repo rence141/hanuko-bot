@@ -49,9 +49,25 @@ SUIT_BONUS = 20  # Bonus HP for Containment Suit
 GUN_CONDITIONS = ["Excellent", "Great", "Good", "Damaged", "Unrepairable"]
 
 def get_gun_condition(user_data, gun_name):
-    # gun_conditions is a dict: {gun_name: condition}
+    # gun_conditions is a dict: {gun_name: percentage}
     gun_conditions = user_data.get("gun_conditions", {})
-    return gun_conditions.get(gun_name, "Excellent")
+    percentage = gun_conditions.get(gun_name, 100)  # Default 100% (Excellent)
+    
+    if percentage >= 100:
+        return "Excellent"
+    elif percentage >= 95:
+        return "Great"
+    elif percentage >= 90:
+        return "Good"
+    elif percentage >= 85:
+        return "Damaged"
+    else:
+        return "Unrepairable"
+
+def get_gun_percentage(user_data, gun_name):
+    # Get the actual percentage value
+    gun_conditions = user_data.get("gun_conditions", {})
+    return gun_conditions.get(gun_name, 100)  # Default 100%
 
 QUESTS_FILE = "quests.json"
 
@@ -688,22 +704,33 @@ class Game(commands.Cog):
                 levelup_embed = check_level_up(interaction, user_data)
                 print(f"[DEBUG] levelup_embed: {levelup_embed} (type: {type(levelup_embed)})")
             elif s_hp > 0 and u_hp <= 0:
-                # Gun break logic: 5% chance to degrade equipped gun
+                # Gun break logic: 30% chance to degrade equipped gun
                 gun_status_msg = ""
                 if equipped_weapon:
                     gun_conditions = user_data.get("gun_conditions", {})
-                    current = gun_conditions.get(equipped_weapon, "Excellent")
-                    degrade_order = ["Excellent", "Great", "Good", "Damaged", "Unrepairable"]
-                    if current != "Unrepairable" and random.random() < 0.05:
-                        idx = degrade_order.index(current)
-                        new_cond = degrade_order[min(idx+1, len(degrade_order)-1)]
-                        gun_conditions[equipped_weapon] = new_cond
+                    current_percentage = get_gun_percentage(user_data, equipped_weapon)
+                    current_condition = get_gun_condition(user_data, equipped_weapon)
+                    
+                    if current_condition != "Unrepairable" and random.random() < 0.30:  # 30% chance
+                        # Reduce percentage by 5%
+                        new_percentage = max(80, current_percentage - 5)  # Minimum 80% (Unrepairable)
+                        gun_conditions[equipped_weapon] = new_percentage
+                        new_condition = get_gun_condition(user_data, equipped_weapon)
                         gun_condition_changed = True
-                        log.append(f"❗ Your {equipped_weapon} condition degraded to {new_cond}!")
-                        current = new_cond
-                    if gun_condition_changed:
-                        update_user(interaction.user.id, gun_conditions=gun_conditions)
-                    gun_status_msg = f"\nYour {equipped_weapon} status is **{current}**."
+                        log.append(f"❗ Your {equipped_weapon} condition degraded to {new_condition} ({new_percentage}%)!")
+                        current_condition = new_condition
+                        
+                        # Remove gun if it becomes unrepairable
+                        if new_condition == "Unrepairable":
+                            inventory.remove(equipped_weapon)
+                            if user_data.get("equipped_gun") == equipped_weapon:
+                                user_data["equipped_gun"] = None
+                            log.append(f"❌ Your {equipped_weapon} became unrepairable and was removed from your inventory!")
+                            update_user(interaction.user.id, gun_conditions=gun_conditions, inventory=inventory, equipped_gun=user_data.get("equipped_gun"))
+                        else:
+                            update_user(interaction.user.id, gun_conditions=gun_conditions)
+                    
+                    gun_status_msg = f"\nYour {equipped_weapon} status is **{current_condition}** ({current_percentage}%)."
                 # Deduct credits based on SCP difficulty
                 if is_dangerous:
                     loss_credits = 100
@@ -1200,6 +1227,75 @@ class Game(commands.Cog):
         user_data["equipped_gear"] = gear
         update_user(interaction.user.id, equipped_gear=gear)
         await interaction.response.send_message(f"✅ You have equipped '{gear}'.", ephemeral=True)
+
+    @app_commands.command(name="gleaderboard", description="Show the global top 10 users across all servers")
+    async def gleaderboard(self, interaction: discord.Interaction):
+        print(f"[DEBUG] /gleaderboard called by {interaction.user}")
+        try:
+            # Get all users from the database
+            all_users = get_all_users()
+            
+            if not all_users:
+                await interaction.response.send_message("❌ No users found in the global database.", ephemeral=True)
+                return
+            
+            # Sort by credits (primary), then XP (secondary), then level (tertiary)
+            sorted_users = sorted(all_users, key=lambda x: (
+                x.get("credits", 0), 
+                x.get("xp", 0), 
+                x.get("level", 1)
+            ), reverse=True)
+            
+            # Get top 10
+            top_10 = sorted_users[:10]
+            
+            embed = discord.Embed(
+                title="🌍 Global Leaderboard",
+                description="Top 10 players across all servers",
+                color=discord.Color.gold()
+            )
+            
+            for i, user_data in enumerate(top_10, 1):
+                user_id = user_data.get("user_id")
+                if not user_id:
+                    continue
+                
+                try:
+                    user = await self.bot.fetch_user(int(user_id))
+                    username = user.display_name
+                except:
+                    username = f"User {user_id}"
+                
+                credits = user_data.get("credits", 0)
+                xp = user_data.get("xp", 0)
+                level = user_data.get("level", 1)
+                
+                # Medal emojis for top 3
+                medal = ""
+                if i == 1:
+                    medal = "🥇 1st"
+                elif i == 2:
+                    medal = "🥈 2nd"
+                elif i == 3:
+                    medal = "🥉 3rd"
+                else:
+                    medal = f"#{i}"
+                
+                embed.add_field(
+                    name=f"{medal} {username}",
+                    value=f"💰 {credits:,} credits | ⭐ {xp:,} XP | 📊 Level {level}",
+                    inline=False
+                )
+            
+            embed.set_footer(text="Global rankings across all servers")
+            await interaction.response.send_message(embed=embed)
+            
+        except Exception as e:
+            print(f"[ERROR] gleaderboard command error: {e}")
+            await interaction.response.send_message(
+                "❌ An error occurred while loading the global leaderboard. Please try again.",
+                ephemeral=True
+            )
 
 async def setup(bot):
     await bot.add_cog(Game(bot))

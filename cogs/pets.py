@@ -136,6 +136,33 @@ def get_pet_by_name(name):
 def get_pet_rarity_color(rarity):
     return PET_RARITY_COLORS.get(rarity, 0x95a5a6)
 
+class PetSelect(ui.View):
+    def __init__(self, user_id, owned_pets):
+        super().__init__(timeout=30)
+        self.user_id = user_id
+        self.owned_pets = owned_pets
+        # Build select options
+        options = [discord.SelectOption(label=pet, value=pet) for pet in owned_pets]
+        # Add the select menu
+        select = ui.Select(placeholder="Choose a pet to equip", min_values=1, max_values=1, options=options)
+        select.callback = self.select_callback
+        self.add_item(select)
+    
+    async def select_callback(self, interaction2):
+        pet = interaction2.data["values"][0]
+        pet_obj = get_pet_by_name(pet)
+        if not pet_obj:
+            await interaction2.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
+            return
+        update_user(self.user_id, equipped_pet=pet)
+        color = get_pet_rarity_color(pet_obj['rarity']) if pet_obj else 0x95a5a6
+        embed = discord.Embed(
+            description=f"🐾 Equipped **{pet}** ({pet_obj['rarity']})!",
+            color=color
+        )
+        await interaction2.response.send_message(embed=embed, ephemeral=True)
+        self.stop()
+
 class Pets(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -276,29 +303,8 @@ class Pets(commands.Cog):
         if not owned_pets:
             await interaction.response.send_message("❌ You do not own any pets.", ephemeral=True)
             return
-        # Build select options
-        options = [discord.SelectOption(label=pet, value=pet) for pet in owned_pets]
-        # Define the select menu
-        class PetSelect(ui.View):
-            def __init__(self):
-                super().__init__(timeout=30)
-                self.value = None
-            @ui.select(placeholder="Choose a pet to equip", min_values=1, max_values=1, options=options)
-            async def select_callback(self, select, interaction2):
-                pet = select.values[0]
-                pet_obj = get_pet_by_name(pet)
-                if not pet_obj:
-                    await interaction2.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
-                    return
-                update_user(interaction.user.id, equipped_pet=pet)
-                color = get_pet_rarity_color(pet_obj['rarity']) if pet_obj else 0x95a5a6
-                embed = discord.Embed(
-                    description=f"🐾 Equipped **{pet}** ({pet_obj['rarity']})!",
-                    color=color
-                )
-                await interaction2.response.send_message(embed=embed, ephemeral=True)
-                self.stop()
-        view = PetSelect()
+        
+        view = PetSelect(interaction.user.id, owned_pets)
         await interaction.response.send_message("Select a pet to equip:", view=view, ephemeral=True)
 
     @app_commands.command(name="unequippet", description="Unequip your current pet")
