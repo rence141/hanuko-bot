@@ -78,23 +78,66 @@ async def on_message(message):
             has_keycard = "Keycard Level 05" in user_data.get("inventory", [])
             if has_keycard:
                 personnel_files = {
-                    "gamer": {
-                        "name": "Gamer",
-                        "title": "Senior Gaming Specialist",
-                        "clearance": "Level 4",
-                        "department": "Entertainment Division",
-                        "status": "Active",
-                        "notes": "Expert in recreational containment protocols. Known for maintaining high morale through strategic gaming sessions. [REDACTED] - Suspected of having classified knowledge about SCP-999's true nature.",
-                        "specialization": "Morale Management & Recreational Containment"
-                    },
                     "kel": {
                         "name": "Kel",
-                        "title": "Containment Protocol Specialist",
-                        "clearance": "Level 3",
-                        "department": "Containment Division",
+                        "title": "05-2 Rapid Reaction Task Force",
+                        "clearance": "Level 5",
+                        "department": "Rapid Reaction Task Force",
                         "status": "Active",
-                        "notes": "Specializes in developing new containment procedures. [REDACTED] - Has been involved in multiple SCP-173 containment breaches. Shows remarkable calm under pressure.",
-                        "specialization": "Protocol Development & Crisis Management"
+                        "notes": "Specializes in rapid response to containment breaches. Trusted with high-level emergencies. [REDACTED] - Level 05-2.",
+                        "specialization": "Crisis Response & Tactical Operations"
+                    },
+                    "gamer": {
+                        "name": "Gamer",
+                        "title": "O5-10 — The Archivist",
+                        "clearance": "Level 5",
+                        "department": "Records and Information Security Administration",
+                        "status": "Active",
+                        "notes": (
+                            "O5-10, known as 'The Archivist', is the custodian of the Foundation's deepest records, including the history of previous timelines and K-Class events. "
+                            "Their true identity is unknown, and even among the O5 Council, O5-10 is considered enigmatic. "
+                            "Rumored to possess near-perfect recall and access to the Wanderer's Library, O5-10 is said to have knowledge of every major event the Foundation has ever faced. "
+                            "Some believe O5-10 is capable of magic learned from forbidden tomes, and that the Foundation's ability to survive repeated apocalypses is due in part to their secret interventions. "
+                            "O5-10 is rarely seen in public, and is often accompanied by an assistant/decoy known only as 'Salt'. "
+                            "Their records are so sensitive that most of the Council does not have access to them."
+                        ),
+                        "specialization": "Timeline Management, K-Class Event Documentation, Anomalous Archives"
+                    },
+                    "jaggy": {
+                        "name": "Jaggy",
+                        "title": "05-1 (The Administrator)",
+                        "clearance": "Level 5",
+                        "department": "Administration",
+                        "status": "Active",
+                        "notes": "The Administrator of the Foundation. [REDACTED] - All other info classified.",
+                        "specialization": "Administration & Oversight"
+                    },
+                    "syshi": {
+                        "name": "Syshi",
+                        "title": "05-8 Overseer of Health and Anomaly",
+                        "clearance": "Level 5",
+                        "department": "Health & Anomaly",
+                        "status": "Active",
+                        "notes": "Overseer of Health and Anomaly. [REDACTED] - Details classified.",
+                        "specialization": "Health & Anomaly Oversight"
+                    },
+                    "e-t": {
+                        "name": "E-T",
+                        "title": "05-[UNKNOWN]",
+                        "clearance": "Level 5",
+                        "department": "Unknown",
+                        "status": "Unknown",
+                        "notes": "Info last seen in [REDACTED].",
+                        "specialization": "Unknown"
+                    },
+                    "lorenzezz": {
+                        "name": "lorenzezz",
+                        "title": "05-6 Head And Department of Artificial Intelligence",
+                        "clearance": "Level 5",
+                        "department": "Artificial Intelligence",
+                        "status": "Active",
+                        "notes": "MY CREATOR. Info unknown.",
+                        "specialization": "AI Development & Oversight"
                     },
                     "rafi": {
                         "name": "Rafi",
@@ -104,24 +147,6 @@ async def on_message(message):
                         "status": "Active",
                         "notes": "Coordinates research efforts across multiple SCPs. [REDACTED] - Claims to have seen SCP-096's face and survived. Investigation ongoing.",
                         "specialization": "Cross-SCP Research & Data Analysis"
-                    },
-                    "jaggy": {
-                        "name": "Jaggy",
-                        "title": "Field Agent",
-                        "clearance": "Level 3",
-                        "department": "Mobile Task Force",
-                        "status": "Active",
-                        "notes": "Specializes in high-risk field operations. [REDACTED] - Has encountered SCP-682 on three separate occasions. Shows signs of psychological trauma.",
-                        "specialization": "Field Operations & Threat Assessment"
-                    },
-                    "jag": {
-                        "name": "Jag",
-                        "title": "Security Specialist",
-                        "clearance": "Level 3",
-                        "department": "Security Division",
-                        "status": "Active",
-                        "notes": "Oversees facility security protocols. [REDACTED] - Suspected of being immune to SCP-049's 'cure'. Medical examination pending.",
-                        "specialization": "Facility Security & Threat Response"
                     },
                     "shyshi": {
                         "name": "Shyshi",

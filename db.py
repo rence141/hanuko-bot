@@ -16,21 +16,41 @@ except ImportError:
 SCHEMA = {
     'users': {
         'id': 'BIGINT PRIMARY KEY',
-        'pets': 'JSONB DEFAULT \'[]\'',
-        'inventory': 'JSONB DEFAULT \'[]\'',
-        'achievements': 'JSONB DEFAULT \'[]\'',
-        'pet_stats': 'JSONB DEFAULT \'{}\'',
-        'pet_last_train': 'JSONB DEFAULT \'{}\'',
-        'mission_progress': 'JSONB DEFAULT \'{}\'',
+        'xp': 'INTEGER DEFAULT 0',
+        'level': 'INTEGER DEFAULT 1',
         'credits': 'INTEGER DEFAULT 0',
+        'pets': 'TEXT',
+        'inventory': 'TEXT',
+        'equipped_weapon': 'VARCHAR(100)',
+        'last_daily': 'TIMESTAMP',
+        'last_weekly': 'TIMESTAMP',
+        'achievements': 'TEXT',
+        'pet_stats': 'TEXT',
+        'pet_last_train': 'TEXT',
+        'mission_progress': 'TEXT',
+        'quiz_last': 'TIMESTAMP',
+        'team': 'VARCHAR(100)',
+        'team_role': 'VARCHAR(50)',
+        'team_points': 'INTEGER DEFAULT 0',
+        'last_mission_start': 'TIMESTAMP',
+        'equipped_pet': 'VARCHAR(255)',
+        'damaged_items': 'TEXT',
+        'equipped_gun': 'VARCHAR(255)',
+        'daily_streak': 'INTEGER DEFAULT 0',
+        'weekly_streak': 'INTEGER DEFAULT 0',
+        'inventory_value': 'INTEGER DEFAULT 0',
         'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
     },
     'teams': {
-        'name': 'VARCHAR(255) PRIMARY KEY',
-        'members': 'JSONB DEFAULT \'[]\'',
-        'achievements': 'JSONB DEFAULT \'[]\'',
-        'quest': 'JSONB DEFAULT \'{}\'',
-        'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+        'name': 'VARCHAR(100) PRIMARY KEY',
+        'owner': 'BIGINT',
+        'members': 'TEXT',
+        'created': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        'points': 'INTEGER DEFAULT 0',
+        'icon': 'TEXT',
+        'description': 'TEXT',
+        'achievements': 'TEXT',
+        'quest': 'TEXT'
     },
     'polls': {
         'id': 'SERIAL PRIMARY KEY',
@@ -99,6 +119,57 @@ def get_table_structure(table_name):
     
     return columns
 
+# --- INVENTORY VALUE HELPERS ---
+def calculate_inventory_value(inventory_items):
+    """Calculate the total value of inventory items"""
+    # Item prices (you can adjust these)
+    item_prices = {
+        # Weapons
+        "Pistol": 1000,
+        "SMG": 2500,
+        "Rifle": 5000,
+        "Sniper": 10000,
+        "Shotgun": 3000,
+        "LMG": 8000,
+        
+        # Keycards
+        "Keycard Level 1": 500,
+        "Keycard Level 2": 1000,
+        "Keycard Level 3": 2000,
+        "Keycard Level 4": 5000,
+        "Keycard Level 5": 10000,
+        
+        # Containment items
+        "Containment Suit": 1500,
+        "SCP Plushie": 100,
+        "SCP-999 Plushie": 200,
+        "SCP-682 Plushie": 500,
+        
+        # Other items
+        "Medkit": 300,
+        "Flashlight": 50,
+        "Radio": 200,
+        "Gas Mask": 400,
+        "Bulletproof Vest": 800,
+        
+        # Default price for unknown items
+        "default": 100
+    }
+    
+    total_value = 0
+    for item in inventory_items:
+        item_value = item_prices.get(item, item_prices["default"])
+        total_value += item_value
+    
+    return total_value
+
+def update_inventory_value(user_id):
+    """Update the inventory_value field for a user based on their current inventory"""
+    user = get_user(user_id)
+    inventory_value = calculate_inventory_value(user.get('inventory', []))
+    update_user(user_id, inventory_value=inventory_value)
+    return inventory_value
+
 # --- USER HELPERS ---
 def get_user(user_id):
     conn = get_db_connection()
@@ -106,21 +177,31 @@ def get_user(user_id):
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     user = cursor.fetchone()
     if not user:
-        # Create new user if not found
+        # Create new user if not found with all the new fields
         cursor.execute(
-            "INSERT INTO users (id, pets, inventory, achievements, pet_stats, pet_last_train, mission_progress) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (user_id, '[]', '[]', '[]', '{}', '{}', '{}')
+            """INSERT INTO users (id, xp, level, credits, pets, inventory, equipped_weapon, 
+            last_daily, last_weekly, achievements, pet_stats, pet_last_train, mission_progress, 
+            quiz_last, team, team_role, team_points, last_mission_start, equipped_pet, 
+            damaged_items, equipped_gun, daily_streak, weekly_streak, inventory_value) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (user_id, 0, 1, 0, '[]', '[]', None, None, None, '[]', '{}', '{}', '{}', 
+             None, None, None, 0, None, None, '[]', None, 0, 0, 0)
         )
         conn.commit()
         cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
         user = cursor.fetchone()
     
-    # Convert JSON fields to Python objects
-    for field in ['pets', 'inventory', 'achievements', 'pet_stats', 'pet_last_train', 'mission_progress']:
+    # Convert TEXT fields that contain JSON data to Python objects
+    json_fields = ['pets', 'inventory', 'achievements', 'pet_stats', 'pet_last_train', 'mission_progress', 'damaged_items']
+    for field in json_fields:
         if user[field]:
-            user[field] = json.loads(user[field]) if isinstance(user[field], str) else user[field]
+            try:
+                user[field] = json.loads(user[field]) if isinstance(user[field], str) else user[field]
+            except json.JSONDecodeError:
+                # If it's not valid JSON, treat as empty
+                user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items'] else {}
         else:
-            user[field] = [] if field in ['pets', 'inventory', 'achievements'] else {}
+            user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items'] else {}
     
     cursor.close()
     conn.close()
@@ -150,9 +231,14 @@ def get_team(team_name):
     cursor.execute("SELECT * FROM teams WHERE name = %s", (team_name,))
     team = cursor.fetchone()
     if team:
+        # Parse TEXT fields that contain JSON data
         for field in ['members', 'achievements', 'quest']:
             if team[field]:
-                team[field] = json.loads(team[field]) if isinstance(team[field], str) else team[field]
+                try:
+                    team[field] = json.loads(team[field]) if isinstance(team[field], str) else team[field]
+                except json.JSONDecodeError:
+                    # If it's not valid JSON, treat as empty
+                    team[field] = [] if field in ['members', 'achievements'] else {}
             else:
                 team[field] = [] if field in ['members', 'achievements'] else {}
     cursor.close()
@@ -183,9 +269,14 @@ def get_all_teams():
     cursor.execute("SELECT * FROM teams")
     teams = cursor.fetchall()
     for team in teams:
+        # Parse TEXT fields that contain JSON data
         for field in ['members', 'achievements', 'quest']:
             if team[field]:
-                team[field] = json.loads(team[field]) if isinstance(team[field], str) else team[field]
+                try:
+                    team[field] = json.loads(team[field]) if isinstance(team[field], str) else team[field]
+                except json.JSONDecodeError:
+                    # If it's not valid JSON, treat as empty
+                    team[field] = [] if field in ['members', 'achievements'] else {}
             else:
                 team[field] = [] if field in ['members', 'achievements'] else {}
     cursor.close()
@@ -198,11 +289,17 @@ def get_all_users():
     cursor.execute("SELECT * FROM users")
     users = cursor.fetchall()
     for user in users:
-        for field in ['pets', 'inventory', 'achievements', 'pet_stats', 'pet_last_train', 'mission_progress']:
+        # Convert TEXT fields that contain JSON data to Python objects
+        json_fields = ['pets', 'inventory', 'achievements', 'pet_stats', 'pet_last_train', 'mission_progress', 'damaged_items']
+        for field in json_fields:
             if user[field]:
-                user[field] = json.loads(user[field]) if isinstance(user[field], str) else user[field]
+                try:
+                    user[field] = json.loads(user[field]) if isinstance(user[field], str) else user[field]
+                except json.JSONDecodeError:
+                    # If it's not valid JSON, treat as empty
+                    user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items'] else {}
             else:
-                user[field] = [] if field in ['pets', 'inventory', 'achievements'] else {}
+                user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items'] else {}
     cursor.close()
     conn.close()
     return users

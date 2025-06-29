@@ -1,6 +1,7 @@
 from discord.ext import commands, tasks
 import discord
 from discord import app_commands
+import traceback
 
 # Try to import config, fall back to config_fallback if not available
 try:
@@ -8,7 +9,7 @@ try:
 except ImportError:
     import config_fallback as config
 
-from db import get_user, update_user, get_all_users, get_team
+from db import get_user, update_user, get_all_users, get_team, get_all_teams, calculate_inventory_value, update_inventory_value
 from datetime import datetime, timedelta
 import asyncio
 import os
@@ -102,12 +103,14 @@ class Game(commands.Cog):
     @app_commands.command(name="profile", description="Show a user's profile")
     @app_commands.describe(user="The user to view (leave blank for yourself)")
     async def profile(self, interaction: discord.Interaction, user: discord.Member = None):
+        print(f"[DEBUG] /profile called by {interaction.user} (ID: {interaction.user.id}) for {user.display_name if user else 'self'}")
         try:
             print("PROFILE COMMAND TRIGGERED")
             if user is None:
                 user = interaction.user
-            print(f"[DEBUG] /profile called by {interaction.user} for {user.display_name} (ID: {user.id})")
+            print(f"[DEBUG] Fetching user data for {user.display_name} (ID: {user.id})")
             user_data = get_user(user.id)
+            print(f"[DEBUG] User data: {user_data}")
             # Check mute status
             muted = False
             silly_message = None
@@ -123,7 +126,9 @@ class Game(commands.Cog):
                     silly_message = random.choice(silly_options)
             # Equipped pet logic
             equipped_pet = user_data.get("equipped_pet")
+            print(f"[DEBUG] Equipped pet: {equipped_pet}")
             pet_obj = get_pet_by_name(equipped_pet) if equipped_pet and equipped_pet in user_data.get("pets", []) else None
+            print(f"[DEBUG] Pet object: {pet_obj}")
             pet_atk = pet_obj["atk"] if pet_obj else 0
             pet_name = pet_obj["name"] if pet_obj else None
             # Default color
@@ -147,11 +152,12 @@ class Game(commands.Cog):
                 "Classified": discord.Color.default()  # Black/neutral
             }
             if equipped_pet:
-                emoji = rarity_emojis.get(pet_obj['rarity'], "")
-                pet_display = f"{emoji} [{pet_obj['name']}] ({pet_obj['rarity']})"
-                pet_color = rarity_colors.get(pet_obj['rarity'], config.EMBED_COLORS["info"])
+                emoji = rarity_emojis.get(pet_obj['rarity'], "") if pet_obj else ""
+                pet_display = f"{emoji} [{pet_obj['name']}] ({pet_obj['rarity']})" if pet_obj else equipped_pet
+                pet_color = rarity_colors.get(pet_obj['rarity'], config.EMBED_COLORS["info"]) if pet_obj else config.EMBED_COLORS["info"]
             else:
                 pet_display = "None"
+            print(f"[DEBUG] Pet display: {pet_display}, pet color: {pet_color}")
             # Inventory with gun condition
             inventory_display = []
             for item in user_data.get("inventory", []):
@@ -160,6 +166,7 @@ class Game(commands.Cog):
                     inventory_display.append(f"{item} [{cond}]")
                 else:
                     inventory_display.append(item)
+            print(f"[DEBUG] Inventory display: {inventory_display}")
             embed = discord.Embed(
                 title=f"🎮 Profile: {user.display_name}",
                 color=pet_color
@@ -185,15 +192,26 @@ class Game(commands.Cog):
                 else:
                     inventory_display.append(item)
             embed.add_field(name="Inventory", value=", ".join(inventory_display) or "None", inline=False)
+            
+            # Add inventory value
+            inventory_value = user_data.get("inventory_value", 0)
+            print(f"[DEBUG] Inventory value: {inventory_value}")
+            if inventory_value > 0:
+                embed.add_field(name="Inventory Value", value=f"💰 {inventory_value:,} credits", inline=True)
+            else:
+                embed.add_field(name="Inventory Value", value="💰 0 credits", inline=True)
 
             # Team info
             team_name = user_data.get("team")
+            print(f"[DEBUG] Team name: {team_name}")
             if team_name:
                 team_role = user_data.get("team_role", "Member")
                 team = get_team(team_name)
+                print(f"[DEBUG] Team object: {team}")
                 team_points = team.get("points", 0) if team else 0
                 # Calculate team rank by points
                 all_teams = get_all_users()
+                print(f"[DEBUG] All teams: {all_teams}")
                 team_points_list = [u.get("team_points", 0) for u in all_teams if u.get("team") == team_name]
                 team_points_list.sort(reverse=True)
                 team_rank = team_points_list.index(user_data.get("team_points", 0)) + 1 if user_data.get("team_points", 0) in team_points_list else "N/A"
@@ -211,6 +229,7 @@ class Game(commands.Cog):
                 embed.title = f"🎮 Profile: {user.display_name} | {title}"
             # Badges
             badges = user_data.get("badges", [])
+            print(f"[DEBUG] Badges: {badges}")
             badge_emojis = {
                 "VIP": "🌟",
                 # Add more badge types and emojis here as you add more cosmetics
@@ -218,23 +237,31 @@ class Game(commands.Cog):
             if badges:
                 badge_display = " ".join(badge_emojis.get(b, b) for b in badges)
                 embed.add_field(name="Badges", value=badge_display, inline=False)
+            print(f"[DEBUG] Finished building embed for {user.display_name}")
             await interaction.response.send_message(embed=embed, delete_after=300)
+            return
         except Exception as e:
             print(f"[ERROR] Profile command error: {e}")
+            traceback.print_exc()
             try:
-                await interaction.response.send_message(
-                    "❌ An error occurred while loading the profile. Please try again.",
-                    ephemeral=True
-                )
-            except:
-                # If interaction already expired, try followup
-                try:
-                    await interaction.followup.send(
-                        "❌ An error occurred while loading the profile. Please try again.",
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(
+                        f"❌ An error occurred while loading the profile. Please try again.\nError: {e}",
                         ephemeral=True
                     )
-                except:
-                    pass
+                else:
+                    await interaction.followup.send(
+                        f"❌ An error occurred while loading the profile. Please try again.\nError: {e}",
+                        ephemeral=True
+                    )
+            except Exception as inner_e:
+                print(f"[ERROR] Failed to send error message: {inner_e}")
+
+    @app_commands.command(name="pro", description="Shortcut for /profile - Show a user's profile")
+    @app_commands.describe(user="The user to view (leave blank for yourself)")
+    async def pro(self, interaction: discord.Interaction, user: discord.Member = None):
+        """Alias for profile command"""
+        await self.profile(interaction, user)
 
     @app_commands.command(name="mission", description="Complete a mission for XP")
     async def mission(self, interaction: discord.Interaction):
@@ -250,7 +277,12 @@ class Game(commands.Cog):
         # Level up check
         levelup_embed = check_level_up(interaction, user_data)
         if levelup_embed:
-            await interaction.followup.send(embed=levelup_embed)
+            try:
+                await interaction.followup.send(embed=levelup_embed)
+            except discord.errors.NotFound as e:
+                print(f"[ERROR] Tried to send followup but webhook was gone: {e}")
+            except Exception as e:
+                print(f"[ERROR] Unexpected error sending followup: {e}")
         try:
             # Delete the ephemeral message after 5 minutes (300 seconds)
             await asyncio.sleep(300)
@@ -541,156 +573,196 @@ class Game(commands.Cog):
 
     @app_commands.command(name="recontainscp", description="Battle an SCP in a containment event!")
     async def recontainscp(self, interaction: discord.Interaction):
-        print(f"[DEBUG] /recontainscp called by {interaction.user}")
-        # Daily quest progress update
-        quests = load_quests()
-        user_id = str(interaction.user.id)
-        today = datetime.utcnow().strftime("%Y-%m-%d")
-        user_quests = quests.get(user_id, {"daily": {"date": today, "recontain": 0, "claimed": False}})
-        # Reset if new day
-        if user_quests["daily"].get("date") != today:
-            user_quests["daily"] = {"date": today, "recontain": 0, "claimed": False}
-        user_quests["daily"]["recontain"] += 1
-        quests[user_id] = user_quests
-        save_quests(quests)
-        user_data = get_user(interaction.user.id)
-        inventory = user_data.get("inventory", [])
-        damaged_items = user_data.get("damaged_items")
-        if not isinstance(damaged_items, list):
-            damaged_items = []
-        # Determine if rare dangerous battle (10% chance)
-        is_dangerous = random.random() < 0.10
-        if is_dangerous:
-            scp = {
-                "name": "SCP-682 (Hard-to-Destroy Reptile)",
-                "hp": 500 + random.randint(0, 200),
-                "atk": 40 + random.randint(0, 20),
-                "desc": "Extremely dangerous and nearly impossible to destroy."
-            }
-        else:
-            scp = random.choice(SCP_LIST)
-        scp_hp = scp["hp"]
-        scp_atk = scp["atk"]
-        # User base stats
-        user_hp = 100
-        user_atk = 10
-        # Find equipped weapon (first weapon in inventory not damaged or unrepairable)
-        equipped_weapon = None
-        for item in inventory:
-            cond = get_gun_condition(user_data, item)
-            if item in WEAPON_BONUS and cond != "Unrepairable":
-                equipped_weapon = item
-                break
-        # If equipped weapon is Unrepairable, remove it
-        if equipped_weapon:
-            cond = get_gun_condition(user_data, equipped_weapon)
-            if cond == "Unrepairable":
-                inventory.remove(equipped_weapon)
-                if user_data.get("equipped_gun") == equipped_weapon:
-                    user_data["equipped_gun"] = None
-                update_user(interaction.user.id, inventory=inventory, equipped_gun=user_data.get("equipped_gun"))
-                await interaction.followup.send(f"❌ Your {equipped_weapon} became unrepairable and was removed from your inventory!")
-                equipped_weapon = None
-        if equipped_weapon:
-            cond = get_gun_condition(user_data, equipped_weapon)
-            if cond == "Damaged":
-                user_atk += int(WEAPON_BONUS[equipped_weapon] * 0.5)  # 50% damage if damaged
-            else:
-                user_atk += WEAPON_BONUS[equipped_weapon]
-        # Equipped pet logic
-        equipped_pet = user_data.get("equipped_pet")
-        pet_obj = get_pet_by_name(equipped_pet) if equipped_pet and equipped_pet in user_data.get("pets", []) else None
-        pet_atk = pet_obj["atk"] if pet_obj else 0
-        pet_name = pet_obj["name"] if pet_obj else None
-        # Battle log
-        log = [f"You encounter **{scp['name']}**! {scp['desc']}",
-               f"Your HP: {user_hp} | ATK: {user_atk}" + (f" | Pet: {pet_name} (ATK: {pet_atk})" if pet_obj else ""),
-               f"SCP HP: {scp_hp} | ATK: {scp_atk}"]
-        turn = 1
-        u_hp, s_hp = user_hp, scp_hp
-        weapon_damaged = False
-        while u_hp > 0 and s_hp > 0 and turn <= 20:
-            # User attacks
-            if equipped_weapon:
-                dmg = random.randint(int(user_atk*0.8), int(user_atk*1.2))
-                s_hp -= dmg
-                log.append(f"Turn {turn}: You attack {scp['name']} for {dmg} damage! SCP HP: {max(s_hp,0)}")
-                # 10% chance weapon gets damaged (only if not already damaged)
-                if not weapon_damaged and random.random() < 0.10:
-                    weapon_damaged = True
-                    damaged_items.append(equipped_weapon)
-                    log.append(f"⚠️ Your {equipped_weapon} was damaged and can no longer be used until repaired!")
-            else:
-                log.append(f"Turn {turn}:DANGER! You have no usable weapon!")
-            # Pet attacks (if present)
-            if pet_obj and s_hp > 0:
-                pet_dmg = random.randint(int(pet_atk*0.8), int(pet_atk*1.2))
-                s_hp -= pet_dmg
-                log.append(f"Turn {turn}: Your pet {pet_name} attacks {scp['name']} for {pet_dmg} damage! SCP HP: {max(s_hp,0)}")
-            if s_hp <= 0:
-                break
-            # SCP attacks
-            dmg = random.randint(int(scp_atk*0.8), int(scp_atk*1.2))
-            u_hp -= dmg
-            log.append(f"Turn {turn}: {scp['name']} attacks you for {dmg} damage! Your HP: {max(u_hp,0)}")
-            turn += 1
-        # Result and rewards
-        reward_xp = 0
-        reward_credits = 0
-        gun_condition_changed = False
-        if u_hp > 0 and s_hp <= 0:
+        try:
+            print(f"[DEBUG] /recontainscp called by {interaction.user}")
+            # Defer the interaction to avoid timeout issues
+            await interaction.response.defer()
+            # Daily quest progress update
+            quests = load_quests()
+            user_id = str(interaction.user.id)
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            user_quests = quests.get(user_id, {"daily": {"date": today, "recontain": 0, "claimed": False}})
+            # Reset if new day
+            if user_quests["daily"].get("date") != today:
+                user_quests["daily"] = {"date": today, "recontain": 0, "claimed": False}
+            user_quests["daily"]["recontain"] += 1
+            quests[user_id] = user_quests
+            save_quests(quests)
+            user_data = get_user(interaction.user.id)
+            inventory = user_data.get("inventory", [])
+            damaged_items = user_data.get("damaged_items")
+            if not isinstance(damaged_items, list):
+                damaged_items = []
+            # Determine if rare dangerous battle (10% chance)
+            is_dangerous = random.random() < 0.10
             if is_dangerous:
-                reward_xp = 50
-                reward_credits = 200
+                scp = {
+                    "name": "SCP-682 (Hard-to-Destroy Reptile)",
+                    "hp": 500 + random.randint(0, 200),
+                    "atk": 40 + random.randint(0, 20),
+                    "desc": "Extremely dangerous and nearly impossible to destroy."
+                }
             else:
-                reward_xp = 20
-                reward_credits = 75
-            reward_xp = apply_xp_boost(user_data, reward_xp)
-            reward_credits = apply_credit_boost(user_data, reward_credits)
-            user_data["xp"] = user_data.get("xp", 0) + reward_xp
-            user_data["credits"] = user_data.get("credits", 0) + reward_credits
-            update_user(interaction.user.id, xp=user_data["xp"], credits=user_data["credits"])
-            result = f"✅ You successfully recontained {scp['name']}!\nYou earned {reward_xp} XP and {reward_credits} credits."
-            color = discord.Color.green()
-            # Level up check
-            levelup_embed = check_level_up(interaction, user_data)
+                scp = random.choice(SCP_LIST)
+            scp_hp = scp["hp"]
+            scp_atk = scp["atk"]
+            # User base stats
+            user_hp = 100
+            user_atk = 10
+            # Find equipped weapon (first weapon in inventory not damaged or unrepairable)
+            equipped_weapon = None
+            for item in inventory:
+                cond = get_gun_condition(user_data, item)
+                if item in WEAPON_BONUS and cond != "Unrepairable":
+                    equipped_weapon = item
+                    break
+            # If equipped weapon is Unrepairable, remove it
+            weapon_removed_message = None
+            if equipped_weapon:
+                cond = get_gun_condition(user_data, equipped_weapon)
+                if cond == "Unrepairable":
+                    inventory.remove(equipped_weapon)
+                    if user_data.get("equipped_gun") == equipped_weapon:
+                        user_data["equipped_gun"] = None
+                    update_user(interaction.user.id, inventory=inventory, equipped_gun=user_data.get("equipped_gun"))
+                    weapon_removed_message = f"❌ Your {equipped_weapon} became unrepairable and was removed from your inventory!"
+                    equipped_weapon = None
+            if equipped_weapon:
+                cond = get_gun_condition(user_data, equipped_weapon)
+                if cond == "Damaged":
+                    user_atk += int(WEAPON_BONUS[equipped_weapon] * 0.5)  # 50% damage if damaged
+                else:
+                    user_atk += WEAPON_BONUS[equipped_weapon]
+            # Equipped pet logic
+            equipped_pet = user_data.get("equipped_pet")
+            pet_obj = get_pet_by_name(equipped_pet) if equipped_pet and equipped_pet in user_data.get("pets", []) else None
+            pet_atk = pet_obj["atk"] if pet_obj else 0
+            pet_name = pet_obj["name"] if pet_obj else None
+            # Battle log
+            log = [f"You encounter **{scp['name']}**! {scp['desc']}",
+                   f"Your HP: {user_hp} | ATK: {user_atk}" + (f" | Pet: {pet_name} (ATK: {pet_atk})" if pet_obj else ""),
+                   f"SCP HP: {scp_hp} | ATK: {scp_atk}"]
+            turn = 1
+            u_hp, s_hp = user_hp, scp_hp
+            weapon_damaged = False
+            while u_hp > 0 and s_hp > 0 and turn <= 20:
+                # User attacks
+                if equipped_weapon:
+                    dmg = random.randint(int(user_atk*0.8), int(user_atk*1.2))
+                    s_hp -= dmg
+                    log.append(f"Turn {turn}: You attack {scp['name']} for {dmg} damage! SCP HP: {max(s_hp,0)}")
+                    # 10% chance weapon gets damaged (only if not already damaged)
+                    if not weapon_damaged and random.random() < 0.10:
+                        weapon_damaged = True
+                        damaged_items.append(equipped_weapon)
+                        log.append(f"⚠️ Your {equipped_weapon} was damaged and can no longer be used until repaired!")
+                else:
+                    log.append(f"Turn {turn}:DANGER! You have no usable weapon!")
+                # Pet attacks (if present)
+                if pet_obj and s_hp > 0:
+                    pet_dmg = random.randint(int(pet_atk*0.8), int(pet_atk*1.2))
+                    s_hp -= pet_dmg
+                    log.append(f"Turn {turn}: Your pet {pet_name} attacks {scp['name']} for {pet_dmg} damage! SCP HP: {max(s_hp,0)}")
+                if s_hp <= 0:
+                    break
+                # SCP attacks
+                dmg = random.randint(int(scp_atk*0.8), int(scp_atk*1.2))
+                u_hp -= dmg
+                log.append(f"Turn {turn}: {scp['name']} attacks you for {dmg} damage! Your HP: {max(u_hp,0)}")
+                turn += 1
+            # Result and rewards
+            reward_xp = 0
+            reward_credits = 0
+            gun_condition_changed = False
+            levelup_embed = None
+            if u_hp > 0 and s_hp <= 0:
+                if is_dangerous:
+                    reward_xp = 50
+                    reward_credits = 200
+                else:
+                    reward_xp = 20
+                    reward_credits = 75
+                reward_xp = apply_xp_boost(user_data, reward_xp)
+                reward_credits = apply_credit_boost(user_data, reward_credits)
+                user_data["xp"] = user_data.get("xp", 0) + reward_xp
+                user_data["credits"] = user_data.get("credits", 0) + reward_credits
+                update_user(interaction.user.id, xp=user_data["xp"], credits=user_data["credits"])
+                result = f"✅ You successfully recontained {scp['name']}!\nYou earned {reward_xp} XP and {reward_credits} credits."
+                color = discord.Color.green()
+                # Level up check
+                levelup_embed = check_level_up(interaction, user_data)
+                print(f"[DEBUG] levelup_embed: {levelup_embed} (type: {type(levelup_embed)})")
+            elif s_hp > 0 and u_hp <= 0:
+                # Gun break logic: 5% chance to degrade equipped gun
+                gun_status_msg = ""
+                if equipped_weapon:
+                    gun_conditions = user_data.get("gun_conditions", {})
+                    current = gun_conditions.get(equipped_weapon, "Excellent")
+                    degrade_order = ["Excellent", "Great", "Good", "Damaged", "Unrepairable"]
+                    if current != "Unrepairable" and random.random() < 0.05:
+                        idx = degrade_order.index(current)
+                        new_cond = degrade_order[min(idx+1, len(degrade_order)-1)]
+                        gun_conditions[equipped_weapon] = new_cond
+                        gun_condition_changed = True
+                        log.append(f"❗ Your {equipped_weapon} condition degraded to {new_cond}!")
+                        current = new_cond
+                    if gun_condition_changed:
+                        update_user(interaction.user.id, gun_conditions=gun_conditions)
+                    gun_status_msg = f"\nYour {equipped_weapon} status is **{current}**."
+                # Deduct credits based on SCP difficulty
+                if is_dangerous:
+                    loss_credits = 100
+                else:
+                    loss_credits = 30
+                user_data["credits"] = max(0, user_data.get("credits", 0) - loss_credits)
+                update_user(interaction.user.id, credits=user_data["credits"])
+                result = f"❌ You were defeated by {scp['name']}! You lost {loss_credits} credits.{gun_status_msg}"
+                color = discord.Color.red()
+            else:
+                result = f"⚠️ The battle ended in a draw!"
+                color = discord.Color.orange()
+            # Save damaged items if changed
+            if weapon_damaged:
+                update_user(interaction.user.id, damaged_items=damaged_items)
+            embed = discord.Embed(title=f"Containment Battle: {scp['name']}", description="\n".join(log), color=color)
+            embed.add_field(name="Result", value=result, inline=False)
+            
+            # Send the main response
+            await interaction.followup.send(embed=embed)
+            
+            # Send weapon removed message if applicable
+            if weapon_removed_message:
+                try:
+                    await interaction.followup.send(weapon_removed_message)
+                except discord.errors.NotFound as e:
+                    print(f"[ERROR] Tried to send weapon removed message but webhook was gone: {e}")
+                except Exception as e:
+                    print(f"[ERROR] Unexpected error sending weapon removed message: {e}")
+            
+            # Send levelup embed if applicable
             if levelup_embed:
-                await interaction.followup.send(embed=levelup_embed)
-        elif s_hp > 0 and u_hp <= 0:
-            # Gun break logic: 5% chance to degrade equipped gun
-            gun_status_msg = ""
-            if equipped_weapon:
-                gun_conditions = user_data.get("gun_conditions", {})
-                current = gun_conditions.get(equipped_weapon, "Excellent")
-                degrade_order = ["Excellent", "Great", "Good", "Damaged", "Unrepairable"]
-                if current != "Unrepairable" and random.random() < 0.05:
-                    idx = degrade_order.index(current)
-                    new_cond = degrade_order[min(idx+1, len(degrade_order)-1)]
-                    gun_conditions[equipped_weapon] = new_cond
-                    gun_condition_changed = True
-                    log.append(f"❗ Your {equipped_weapon} condition degraded to {new_cond}!")
-                    current = new_cond
-                if gun_condition_changed:
-                    update_user(interaction.user.id, gun_conditions=gun_conditions)
-                gun_status_msg = f"\nYour {equipped_weapon} status is **{current}**."
-            # Deduct credits based on SCP difficulty
-            if is_dangerous:
-                loss_credits = 100
-            else:
-                loss_credits = 30
-            user_data["credits"] = max(0, user_data.get("credits", 0) - loss_credits)
-            update_user(interaction.user.id, credits=user_data["credits"])
-            result = f"❌ You were defeated by {scp['name']}! You lost {loss_credits} credits.{gun_status_msg}"
-            color = discord.Color.red()
-        else:
-            result = f"⚠️ The battle ended in a draw!"
-            color = discord.Color.orange()
-        # Save damaged items if changed
-        if weapon_damaged:
-            update_user(interaction.user.id, damaged_items=damaged_items)
-        embed = discord.Embed(title=f"Containment Battle: {scp['name']}", description="\n".join(log), color=color)
-        embed.add_field(name="Result", value=result, inline=False)
-        await interaction.response.send_message(embed=embed)
+                try:
+                    await interaction.followup.send(embed=levelup_embed)
+                except discord.errors.NotFound as e:
+                    print(f"[ERROR] Tried to send followup but webhook was gone: {e}")
+                except Exception as e:
+                    print(f"[ERROR] Unexpected error sending followup: {e}")
+        except Exception as e:
+            print(f"[ERROR] recontainscp command error: {e}")
+            import traceback; traceback.print_exc()
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(
+                        f"❌ An error occurred. Please try again.\nError: {e}",
+                        ephemeral=True
+                    )
+                else:
+                    await interaction.followup.send(
+                        f"❌ An error occurred. Please try again.\nError: {e}",
+                        ephemeral=True
+                    )
+            except Exception as inner_e:
+                print(f"[ERROR] Failed to send error message: {inner_e}")
 
     @app_commands.command(name="gunsmith", description="Repair a damaged weapon for 10% of its shop price.")
     @app_commands.describe(item="The name of the weapon to repair")
@@ -839,6 +911,9 @@ class Game(commands.Cog):
                 return
         if bet <= 0:
             await interaction.response.send_message("You have no more credits to bet!", ephemeral=True)
+            return
+        if user_data.get("credits", 0) < bet:
+            await interaction.response.send_message("You don't have enough credits to bet that amount!", ephemeral=True)
             return
         settings = {
             "rough": {"win_chance": 0.10, "multiplier": 10, "desc": "You risk it all for a huge reward!"},
@@ -1046,7 +1121,90 @@ class Game(commands.Cog):
         levelup_embed = check_level_up(interaction, user_data)
         await interaction.response.send_message(embed=embed)
         if levelup_embed:
-            await interaction.followup.send(embed=levelup_embed)
+            try:
+                await interaction.followup.send(embed=levelup_embed)
+            except discord.errors.NotFound as e:
+                print(f"[ERROR] Tried to send followup but webhook was gone: {e}")
+            except Exception as e:
+                print(f"[ERROR] Unexpected error sending followup: {e}")
+
+    @app_commands.command(name="inventoryvalue", description="Check the total value of your inventory")
+    async def inventoryvalue(self, interaction: discord.Interaction):
+        try:
+            user_data = get_user(interaction.user.id)
+            inventory = user_data.get("inventory", [])
+            
+            # Calculate current inventory value
+            current_value = calculate_inventory_value(inventory)
+            
+            # Update the database with the calculated value
+            update_user(interaction.user.id, inventory_value=current_value)
+            
+            embed = discord.Embed(
+                title="💰 Inventory Value",
+                description=f"Your inventory is worth **{current_value:,} credits**",
+                color=discord.Color.gold()
+            )
+            
+            if inventory:
+                # Show breakdown of valuable items
+                item_prices = {
+                    "Pistol": 1000, "SMG": 2500, "Rifle": 5000, "Sniper": 10000, "Shotgun": 3000, "LMG": 8000,
+                    "Keycard Level 1": 500, "Keycard Level 2": 1000, "Keycard Level 3": 2000, 
+                    "Keycard Level 4": 5000, "Keycard Level 5": 10000,
+                    "Containment Suit": 1500, "SCP Plushie": 100, "SCP-999 Plushie": 200, "SCP-682 Plushie": 500,
+                    "Medkit": 300, "Flashlight": 50, "Radio": 200, "Gas Mask": 400, "Bulletproof Vest": 800
+                }
+                
+                valuable_items = []
+                for item in inventory:
+                    if item in item_prices and item_prices[item] > 100:
+                        valuable_items.append(f"• {item}: {item_prices[item]:,} credits")
+                
+                if valuable_items:
+                    embed.add_field(
+                        name="Valuable Items", 
+                        value="\n".join(valuable_items[:10]),  # Show top 10 most valuable
+                        inline=False
+                    )
+            else:
+                embed.add_field(name="Items", value="No items in inventory", inline=False)
+            
+            embed.set_footer(text="💡 Tip: Your inventory value helps you understand your total wealth!")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            
+        except Exception as e:
+            print(f"[ERROR] inventoryvalue command error: {e}")
+            await interaction.response.send_message(
+                "❌ An error occurred while calculating inventory value. Please try again.",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="bal", description="Shortcut for /checkcredits - Check your credits")
+    @app_commands.describe(user="The user to check (leave blank for yourself)", public="Show the result publicly (default: private)")
+    async def bal(self, interaction: discord.Interaction, user: discord.Member = None, public: bool = False):
+        """Alias for checkcredits command"""
+        await self.checkcredits(interaction, user, public)
+
+    @app_commands.command(name="lb", description="Shortcut for /leaderboard - Show the top 10 users")
+    async def lb(self, interaction: discord.Interaction):
+        """Alias for leaderboard command"""
+        await self.leaderboard(interaction)
+
+    @app_commands.command(name="equipgear", description="Equip a gear item from your inventory.")
+    @app_commands.describe(gear="The name of the gear to equip")
+    async def equipgear(self, interaction: discord.Interaction, gear: str):
+        GEAR_NAMES = [
+            "Containment Suit", "Tactical Vest", "Night Vision Goggles", "Radio", "Binoculars", "Lockpick Set"
+        ]
+        user_data = get_user(interaction.user.id)
+        inventory = user_data.get("inventory", [])
+        if gear not in inventory or gear not in GEAR_NAMES:
+            await interaction.response.send_message(f"❌ You do not have '{gear}' in your inventory or it is not a valid gear item.", ephemeral=True)
+            return
+        user_data["equipped_gear"] = gear
+        update_user(interaction.user.id, equipped_gear=gear)
+        await interaction.response.send_message(f"✅ You have equipped '{gear}'.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Game(bot))
