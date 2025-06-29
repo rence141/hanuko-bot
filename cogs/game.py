@@ -102,122 +102,139 @@ class Game(commands.Cog):
     @app_commands.command(name="profile", description="Show a user's profile")
     @app_commands.describe(user="The user to view (leave blank for yourself)")
     async def profile(self, interaction: discord.Interaction, user: discord.Member = None):
-        print("PROFILE COMMAND TRIGGERED")
-        if user is None:
-            user = interaction.user
-        print(f"[DEBUG] /profile called by {interaction.user} for {user.display_name} (ID: {user.id})")
-        user_data = get_user(user.id)
-        # Check mute status
-        muted = False
-        silly_message = None
-        if os.path.exists("muted.json"):
-            with open("muted.json", "r", encoding="utf-8") as f:
-                muted_data = json.load(f)
-            if str(user.id) in muted_data:
-                muted = True
-                silly_options = [
-                    "Shhh! This user is on vocal lockdown. 🤫",
-                    "This player got hit with a mod mute. Sucks to be like that. LOL"
-                ]
-                silly_message = random.choice(silly_options)
-        # Equipped pet logic
-        equipped_pet = user_data.get("equipped_pet")
-        pet_obj = get_pet_by_name(equipped_pet) if equipped_pet and equipped_pet in user_data.get("pets", []) else None
-        pet_atk = pet_obj["atk"] if pet_obj else 0
-        pet_name = pet_obj["name"] if pet_obj else None
-        # Default color
-        pet_color = config.EMBED_COLORS["info"]
-        rarity_emojis = {
-            "Common": "🟩",
-            "Uncommon": "🟦",
-            "Rare": "🟧",
-            "Legendary": "🟨",
-            "Epic": "🟪",
-            "Mythic": "🟥",
-            "Classified": "⬛"
-        }
-        rarity_colors = {
-            "Common": discord.Color.green(),
-            "Uncommon": discord.Color.blue(),
-            "Rare": discord.Color.orange(),
-            "Legendary": discord.Color.gold(),
-            "Epic": discord.Color.purple(),
-            "Mythic": discord.Color.red(),
-            "Classified": discord.Color.default()  # Black/neutral
-        }
-        if equipped_pet:
-            emoji = rarity_emojis.get(pet_obj['rarity'], "")
-            pet_display = f"{emoji} [{pet_obj['name']}] ({pet_obj['rarity']})"
-            pet_color = rarity_colors.get(pet_obj['rarity'], config.EMBED_COLORS["info"])
-        else:
-            pet_display = "None"
-        # Inventory with gun condition
-        inventory_display = []
-        for item in user_data.get("inventory", []):
-            if item in WEAPON_BONUS:
-                cond = get_gun_condition(user_data, item)
-                inventory_display.append(f"{item} [{cond}]")
+        try:
+            print("PROFILE COMMAND TRIGGERED")
+            if user is None:
+                user = interaction.user
+            print(f"[DEBUG] /profile called by {interaction.user} for {user.display_name} (ID: {user.id})")
+            user_data = get_user(user.id)
+            # Check mute status
+            muted = False
+            silly_message = None
+            if os.path.exists("muted.json"):
+                with open("muted.json", "r", encoding="utf-8") as f:
+                    muted_data = json.load(f)
+                if str(user.id) in muted_data:
+                    muted = True
+                    silly_options = [
+                        "Shhh! This user is on vocal lockdown. 🤫",
+                        "This player got hit with a mod mute. Sucks to be like that. LOL"
+                    ]
+                    silly_message = random.choice(silly_options)
+            # Equipped pet logic
+            equipped_pet = user_data.get("equipped_pet")
+            pet_obj = get_pet_by_name(equipped_pet) if equipped_pet and equipped_pet in user_data.get("pets", []) else None
+            pet_atk = pet_obj["atk"] if pet_obj else 0
+            pet_name = pet_obj["name"] if pet_obj else None
+            # Default color
+            pet_color = config.EMBED_COLORS["info"]
+            rarity_emojis = {
+                "Common": "🟩",
+                "Uncommon": "🟦",
+                "Rare": "🟧",
+                "Legendary": "🟨",
+                "Epic": "🟪",
+                "Mythic": "🟥",
+                "Classified": "⬛"
+            }
+            rarity_colors = {
+                "Common": discord.Color.green(),
+                "Uncommon": discord.Color.blue(),
+                "Rare": discord.Color.orange(),
+                "Legendary": discord.Color.gold(),
+                "Epic": discord.Color.purple(),
+                "Mythic": discord.Color.red(),
+                "Classified": discord.Color.default()  # Black/neutral
+            }
+            if equipped_pet:
+                emoji = rarity_emojis.get(pet_obj['rarity'], "")
+                pet_display = f"{emoji} [{pet_obj['name']}] ({pet_obj['rarity']})"
+                pet_color = rarity_colors.get(pet_obj['rarity'], config.EMBED_COLORS["info"])
             else:
-                inventory_display.append(item)
-        embed = discord.Embed(
-            title=f"🎮 Profile: {user.display_name}",
-            color=pet_color
-        )
-        embed.set_thumbnail(url=user.display_avatar.url)
-        embed.add_field(name="Level", value=user_data.get("level", 1), inline=True)
-        embed.add_field(name="XP", value=user_data.get("xp", 0), inline=True)
-        embed.add_field(name="Credits", value=user_data.get("credits", 0), inline=True)
-        
-        # Add streak information
-        daily_streak = user_data.get("daily_streak", 0)
-        weekly_streak = user_data.get("weekly_streak", 0)
-        embed.add_field(name="Daily Streak", value=f"🔥 {daily_streak} days", inline=True)
-        embed.add_field(name="Weekly Streak", value=f"🔥 {weekly_streak} weeks", inline=True)
-        
-        embed.add_field(name="Equipped Pet", value=pet_display, inline=False)
-        # Inventory with gun condition
-        inventory_display = []
-        for item in user_data.get("inventory", []):
-            if item in WEAPON_BONUS:
-                cond = get_gun_condition(user_data, item)
-                inventory_display.append(f"{item} [{cond}]")
-            else:
-                inventory_display.append(item)
-        embed.add_field(name="Inventory", value=", ".join(inventory_display) or "None", inline=False)
+                pet_display = "None"
+            # Inventory with gun condition
+            inventory_display = []
+            for item in user_data.get("inventory", []):
+                if item in WEAPON_BONUS:
+                    cond = get_gun_condition(user_data, item)
+                    inventory_display.append(f"{item} [{cond}]")
+                else:
+                    inventory_display.append(item)
+            embed = discord.Embed(
+                title=f"🎮 Profile: {user.display_name}",
+                color=pet_color
+            )
+            embed.set_thumbnail(url=user.display_avatar.url)
+            embed.add_field(name="Level", value=user_data.get("level", 1), inline=True)
+            embed.add_field(name="XP", value=user_data.get("xp", 0), inline=True)
+            embed.add_field(name="Credits", value=user_data.get("credits", 0), inline=True)
+            
+            # Add streak information
+            daily_streak = user_data.get("daily_streak", 0)
+            weekly_streak = user_data.get("weekly_streak", 0)
+            embed.add_field(name="Daily Streak", value=f"🔥 {daily_streak} days", inline=True)
+            embed.add_field(name="Weekly Streak", value=f"🔥 {weekly_streak} weeks", inline=True)
+            
+            embed.add_field(name="Equipped Pet", value=pet_display, inline=False)
+            # Inventory with gun condition
+            inventory_display = []
+            for item in user_data.get("inventory", []):
+                if item in WEAPON_BONUS:
+                    cond = get_gun_condition(user_data, item)
+                    inventory_display.append(f"{item} [{cond}]")
+                else:
+                    inventory_display.append(item)
+            embed.add_field(name="Inventory", value=", ".join(inventory_display) or "None", inline=False)
 
-        # Team info
-        team_name = user_data.get("team")
-        if team_name:
-            team_role = user_data.get("team_role", "Member")
-            team = get_team(team_name)
-            team_points = team.get("points", 0) if team else 0
-            # Calculate team rank by points
-            all_teams = get_all_users()
-            team_points_list = [u.get("team_points", 0) for u in all_teams if u.get("team") == team_name]
-            team_points_list.sort(reverse=True)
-            team_rank = team_points_list.index(user_data.get("team_points", 0)) + 1 if user_data.get("team_points", 0) in team_points_list else "N/A"
-            embed.add_field(name="Team", value=team_name, inline=True)
-            embed.add_field(name="Team Role", value=team_role, inline=True)
-            embed.add_field(name="Team Points", value=team_points, inline=True)
-            embed.add_field(name="Team Rank", value=team_rank, inline=True)
-        # Add muted status and silly message if muted
-        if muted:
-            embed.add_field(name="Status", value="🔇 Muted", inline=False)
-            embed.add_field(name="Note", value=silly_message, inline=False)
-        # Title
-        title = user_data.get("title")
-        if title:
-            embed.title = f"🎮 Profile: {user.display_name} | {title}"
-        # Badges
-        badges = user_data.get("badges", [])
-        badge_emojis = {
-            "VIP": "🌟",
-            # Add more badge types and emojis here as you add more cosmetics
-        }
-        if badges:
-            badge_display = " ".join(badge_emojis.get(b, b) for b in badges)
-            embed.add_field(name="Badges", value=badge_display, inline=False)
-        await interaction.response.send_message(embed=embed, delete_after=300)
+            # Team info
+            team_name = user_data.get("team")
+            if team_name:
+                team_role = user_data.get("team_role", "Member")
+                team = get_team(team_name)
+                team_points = team.get("points", 0) if team else 0
+                # Calculate team rank by points
+                all_teams = get_all_users()
+                team_points_list = [u.get("team_points", 0) for u in all_teams if u.get("team") == team_name]
+                team_points_list.sort(reverse=True)
+                team_rank = team_points_list.index(user_data.get("team_points", 0)) + 1 if user_data.get("team_points", 0) in team_points_list else "N/A"
+                embed.add_field(name="Team", value=team_name, inline=True)
+                embed.add_field(name="Team Role", value=team_role, inline=True)
+                embed.add_field(name="Team Points", value=team_points, inline=True)
+                embed.add_field(name="Team Rank", value=team_rank, inline=True)
+            # Add muted status and silly message if muted
+            if muted:
+                embed.add_field(name="Status", value="🔇 Muted", inline=False)
+                embed.add_field(name="Note", value=silly_message, inline=False)
+            # Title
+            title = user_data.get("title")
+            if title:
+                embed.title = f"🎮 Profile: {user.display_name} | {title}"
+            # Badges
+            badges = user_data.get("badges", [])
+            badge_emojis = {
+                "VIP": "🌟",
+                # Add more badge types and emojis here as you add more cosmetics
+            }
+            if badges:
+                badge_display = " ".join(badge_emojis.get(b, b) for b in badges)
+                embed.add_field(name="Badges", value=badge_display, inline=False)
+            await interaction.response.send_message(embed=embed, delete_after=300)
+        except Exception as e:
+            print(f"[ERROR] Profile command error: {e}")
+            try:
+                await interaction.response.send_message(
+                    "❌ An error occurred while loading the profile. Please try again.",
+                    ephemeral=True
+                )
+            except:
+                # If interaction already expired, try followup
+                try:
+                    await interaction.followup.send(
+                        "❌ An error occurred while loading the profile. Please try again.",
+                        ephemeral=True
+                    )
+                except:
+                    pass
 
     @app_commands.command(name="mission", description="Complete a mission for XP")
     async def mission(self, interaction: discord.Interaction):

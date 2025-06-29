@@ -71,11 +71,39 @@ class Misc(commands.Cog):
 
     async def cog_app_command_error(self, interaction, error):
         if isinstance(error, CommandOnCooldown):
-            await interaction.response.send_message(
-                f"⏳ You're using this command too quickly! Please slow down. Try again in {error.retry_after:.1f} seconds.",
-                ephemeral=True
-            )
+            try:
+                await interaction.response.send_message(
+                    f"⏳ You're using this command too quickly! Please slow down. Try again in {error.retry_after:.1f} seconds.",
+                    ephemeral=True
+                )
+            except:
+                # If interaction already responded, try to follow up
+                try:
+                    await interaction.followup.send(
+                        f"⏳ You're using this command too quickly! Please slow down. Try again in {error.retry_after:.1f} seconds.",
+                        ephemeral=True
+                    )
+                except:
+                    pass
+        elif "Unknown interaction" in str(error) or "404 Not Found" in str(error):
+            # Interaction expired, can't respond
+            print(f"[WARNING] Interaction expired for user {interaction.user}")
+            return
         else:
+            try:
+                await interaction.response.send_message(
+                    f"❌ An error occurred: {str(error)}",
+                    ephemeral=True
+                )
+            except:
+                # If interaction already responded, try to follow up
+                try:
+                    await interaction.followup.send(
+                        f"❌ An error occurred: {str(error)}",
+                        ephemeral=True
+                    )
+                except:
+                    pass
             raise error
 
     # Decorator for all commands in this cog

@@ -469,6 +469,29 @@ async def web_server():
     await site.start()
     print(f"🌐 Web server started on port {os.environ.get('PORT', 8080)}")
 
+@bot.event
+async def on_app_command_error(interaction, error):
+    """Global error handler for app commands"""
+    if "Unknown interaction" in str(error) or "404 Not Found" in str(error):
+        # Interaction expired, can't respond
+        print(f"[WARNING] Interaction expired for user {interaction.user}")
+        return
+    
+    try:
+        await interaction.response.send_message(
+            f"❌ An error occurred: {str(error)}",
+            ephemeral=True
+        )
+    except:
+        # If interaction already responded, try to follow up
+        try:
+            await interaction.followup.send(
+                f"❌ An error occurred: {str(error)}",
+                ephemeral=True
+            )
+        except:
+            pass
+
 async def main():
     TOKEN = os.environ.get("DISCORD_BOT_TOKEN", config.BOT_TOKEN)
     
