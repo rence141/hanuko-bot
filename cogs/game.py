@@ -1234,42 +1234,47 @@ class Game(commands.Cog):
         try:
             # Get all users from the database
             all_users = get_all_users()
-            
+            print(f"[DEBUG] get_all_users() returned: {all_users}")
             if not all_users:
                 await interaction.response.send_message("❌ No users found in the global database.", ephemeral=True)
                 return
-            
+            # Filter out users missing required fields
+            filtered_users = []
+            for u in all_users:
+                if not isinstance(u, dict):
+                    print(f"[DEBUG] Skipping non-dict user: {u}")
+                    continue
+                if "id" not in u:
+                    print(f"[DEBUG] Skipping user missing 'id': {u}")
+                    continue
+                filtered_users.append(u)
+            print(f"[DEBUG] Filtered users: {filtered_users}")
             # Sort by credits (primary), then XP (secondary), then level (tertiary)
-            sorted_users = sorted(all_users, key=lambda x: (
+            sorted_users = sorted(filtered_users, key=lambda x: (
                 x.get("credits", 0), 
                 x.get("xp", 0), 
                 x.get("level", 1)
             ), reverse=True)
-            
             # Get top 10
             top_10 = sorted_users[:10]
-            
             embed = discord.Embed(
                 title="🌍 Global Leaderboard",
                 description="Top 10 players across all servers",
                 color=discord.Color.gold()
             )
-            
             for i, user_data in enumerate(top_10, 1):
-                user_id = user_data.get("user_id")
+                user_id = user_data.get("id")
                 if not user_id:
                     continue
-                
                 try:
                     user = await self.bot.fetch_user(int(user_id))
                     username = user.display_name
-                except:
+                except Exception as e:
+                    print(f"[DEBUG] Could not fetch user {user_id}: {e}")
                     username = f"User {user_id}"
-                
                 credits = user_data.get("credits", 0)
                 xp = user_data.get("xp", 0)
                 level = user_data.get("level", 1)
-                
                 # Medal emojis for top 3
                 medal = ""
                 if i == 1:
@@ -1280,16 +1285,13 @@ class Game(commands.Cog):
                     medal = "🥉 3rd"
                 else:
                     medal = f"#{i}"
-                
                 embed.add_field(
                     name=f"{medal} {username}",
                     value=f"💰 {credits:,} credits | ⭐ {xp:,} XP | 📊 Level {level}",
                     inline=False
                 )
-            
             embed.set_footer(text="Global rankings across all servers")
             await interaction.response.send_message(embed=embed)
-            
         except Exception as e:
             print(f"[ERROR] gleaderboard command error: {e}")
             await interaction.response.send_message(
