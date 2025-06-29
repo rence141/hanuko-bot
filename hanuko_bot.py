@@ -1,4 +1,5 @@
 import discord
+from discord.ext import commands, tasks
 # Try to import config, fall back to config_fallback if not available
 try:
     import config
@@ -7,7 +8,6 @@ except ImportError:
 import os
 import asyncio
 import random
-from discord.ext import tasks
 from db import get_user, update_user, get_all_users
 from discord import app_commands
 import time
