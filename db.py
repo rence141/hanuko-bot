@@ -3,15 +3,10 @@ import psycopg2
 import psycopg2.extras
 import json
 import os
+import config
 
-# PostgreSQL connection settings (using environment variables for Render)
-db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'database': os.getenv('DB_NAME', 'hanuko_bot'),
-    'port': os.getenv('DB_PORT', '5432')
-}
+# PostgreSQL connection settings (using config)
+db_config = config.DB_CONFIG
 
 # Database Schema Definition - Your bot knows about tables and columns here
 SCHEMA = {
