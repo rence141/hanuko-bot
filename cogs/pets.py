@@ -383,8 +383,17 @@ class Pets(commands.Cog):
             except Exception:
                 pass
 
+    async def comparepet_autocomplete(self, interaction: discord.Interaction, current: str):
+        user_data = get_user(interaction.user.id)
+        owned_pets = user_data.get("pets", [])
+        return [
+            app_commands.Choice(name=pet, value=pet)
+            for pet in owned_pets if current.lower() in pet.lower()
+        ][:25]
+
     @app_commands.command(name="comparepet", description="Compare the stats of two pets by name")
     @app_commands.describe(pet1="The name of the first pet", pet2="The name of the second pet")
+    @app_commands.autocomplete(pet1=comparepet_autocomplete, pet2=comparepet_autocomplete)
     async def comparepet(self, interaction: discord.Interaction, pet1: str, pet2: str):
         pet_obj1 = get_pet_by_name(pet1)
         pet_obj2 = get_pet_by_name(pet2)
