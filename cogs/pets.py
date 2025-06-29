@@ -644,103 +644,63 @@ class Pets(commands.Cog):
         view = PetSelect(interaction.user.id, owned_pets)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(name="petbattleteam", description="Set up your pet battle team (1-3 pets for battles)")
-    async def petbattleteam(self, interaction: discord.Interaction):
+    async def battleteam_autocomplete(self, interaction: discord.Interaction, current: str):
+        user_data = get_user(interaction.user.id)
+        owned_pets = user_data.get("pets", [])
+        return [
+            app_commands.Choice(name=pet, value=pet)
+            for pet in owned_pets if current.lower() in pet.lower()
+        ][:25]
+
+    @app_commands.command(name="petbattleteam", description="Set up your pet battle team (up to 3 pets)")
+    @app_commands.describe(
+        pet1="First pet for your battle team",
+        pet2="Second pet (optional)",
+        pet3="Third pet (optional)"
+    )
+    @app_commands.autocomplete(pet1=battleteam_autocomplete, pet2=battleteam_autocomplete, pet3=battleteam_autocomplete)
+    async def petbattleteam(self, interaction: discord.Interaction, pet1: str, pet2: str = None, pet3: str = None):
         print(f"[DEBUG] /petbattleteam called by {interaction.user}")
         user_data = get_user(interaction.user.id)
         owned_pets = user_data.get("pets", [])
         
-        if len(owned_pets) < 1:
-            await interaction.response.send_message(f"❌ You need at least 1 pet to create a battle team. You have {len(owned_pets)} pets.", ephemeral=True)
+        # Build team list, filter out None and duplicates
+        team = [pet for pet in [pet1, pet2, pet3] if pet]
+        team = list(dict.fromkeys(team))  # Remove duplicates, preserve order
+        
+        if len(team) < 1:
+            await interaction.response.send_message("❌ You must select at least 1 pet for your battle team.", ephemeral=True)
             return
-        
-        # Create a view with a select menu for 1-3 pets
-        class BattleTeamSelect(ui.View):
-            def __init__(self, user_id, owned_pets):
-                super().__init__(timeout=60)
-                self.user_id = user_id
-                self.owned_pets = owned_pets
-                # Build select options for 1-3 pets
-                options = [discord.SelectOption(label=pet, value=pet) for pet in owned_pets]
-                # Add the select menu - allow 1-3 selections
-                max_selections = min(3, len(owned_pets))
-                select = ui.Select(placeholder=f"Choose 1-{max_selections} pets for your battle team", min_values=1, max_values=max_selections, options=options)
-                select.callback = self.select_callback
-                self.add_item(select)
-            
-            async def select_callback(self, interaction2):
-                selected_pets = interaction2.data["values"]
-                
-                # Validate pets
-                for pet in selected_pets:
-                    pet_obj = get_pet_by_name(pet)
-                    if not pet_obj:
-                        try:
-                            await interaction2.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
-                        except discord.NotFound:
-                            await interaction2.followup.send(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
-                        return
-                
-                # Save battle team
-                update_user(self.user_id, battle_team=selected_pets)
-                
-                # Create embed showing battle team
-                embed = discord.Embed(title="⚔️ Battle Team Set!", description="Your pet battle team:", color=0xff6b6b)
-                
-                for i, pet in enumerate(selected_pets, 1):
-                    pet_obj = get_pet_by_name(pet)
-                    embed.add_field(
-                        name=f"Slot {i}: {pet}",
-                        value=f"Rarity: {pet_obj['rarity']} | HP: {pet_obj['hp']} | ATK: {pet_obj['atk']}",
-                        inline=False
-                    )
-                
-                # Warning message for fewer pets
-                if len(selected_pets) < 3:
-                    embed.add_field(
-                        name="⚠️ Warning",
-                        value=f"You have set {len(selected_pets)} pet(s) in your battle team. Having fewer than 3 pets puts you at a disadvantage in 3v3 battles!",
-                        inline=False
-                    )
-                    embed.color = 0xffa500  # Orange for warning
-                
-                embed.set_footer(text="Use /petbattle to challenge other players!")
-                
-                try:
-                    await interaction2.response.send_message(embed=embed, ephemeral=True)
-                except discord.NotFound:
-                    await interaction2.followup.send(embed=embed, ephemeral=True)
-                
-                self.stop()
-        
-        # Show current battle team if exists
-        current_team = user_data.get("battle_team", [])
-        embed = discord.Embed(title="⚔️ Pet Battle Team", description="", color=0x3498db)
-        
-        if current_team:
-            embed.add_field(name="Current Battle Team", value="", inline=False)
-            for i, pet in enumerate(current_team, 1):
-                pet_obj = get_pet_by_name(pet)
-                if pet_obj:
-                    embed.add_field(
-                        name=f"Slot {i}: {pet}",
-                        value=f"Rarity: {pet_obj['rarity']} | HP: {pet_obj['hp']} | ATK: {pet_obj['atk']}",
-                        inline=False
-                    )
-            
-            # Show warning if current team has fewer than 3 pets
-            if len(current_team) < 3:
-                embed.add_field(
-                    name="⚠️ Current Team Status",
-                    value=f"Your current team has {len(current_team)} pet(s). Consider adding more pets for better battle performance!",
-                    inline=False
-                )
-        else:
-            embed.add_field(name="No Battle Team Set", value=f"Select 1-{min(3, len(owned_pets))} pets below to create your battle team!", inline=False)
-        
-        # Add dropdown to select battle team
-        view = BattleTeamSelect(interaction.user.id, owned_pets)
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        if len(team) > 3:
+            await interaction.response.send_message("❌ You can only have up to 3 pets in your battle team.", ephemeral=True)
+            return
+        for pet in team:
+            if pet not in owned_pets:
+                await interaction.response.send_message(f"❌ You do not own '{pet}'.", ephemeral=True)
+                return
+            if not get_pet_by_name(pet):
+                await interaction.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
+                return
+        # Save battle team
+        update_user(interaction.user.id, battle_team=team)
+        # Create embed showing battle team
+        embed = discord.Embed(title="⚔️ Battle Team Set!", description="Your pet battle team:", color=0xff6b6b)
+        for i, pet in enumerate(team, 1):
+            pet_obj = get_pet_by_name(pet)
+            embed.add_field(
+                name=f"Slot {i}: {pet}",
+                value=f"Rarity: {pet_obj['rarity']} | HP: {pet_obj['hp']} | ATK: {pet_obj['atk']}",
+                inline=False
+            )
+        if len(team) < 3:
+            embed.add_field(
+                name="⚠️ Warning",
+                value=f"You have set {len(team)} pet(s) in your battle team. Having fewer than 3 pets puts you at a disadvantage in 3v3 battles!",
+                inline=False
+            )
+            embed.color = 0xffa500  # Orange for warning
+        embed.set_footer(text="Use /petbattle to challenge other players!")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="adoptpet10x", description="Adopt 10 random pets at once (5% discount)")
     async def adoptpet10x(self, interaction: discord.Interaction):
