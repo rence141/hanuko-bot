@@ -795,7 +795,7 @@ class Pets(commands.Cog):
         # Get 10 random pets
         adopted_pets = []
         for _ in range(10):
-            pet = random.choice(list(pets.values()))
+            pet = random.choice(PETS)
             adopted_pets.append(pet["name"])
         
         # Add pets to user's collection
@@ -813,7 +813,7 @@ class Pets(commands.Cog):
         # Group pets by rarity for display
         rarity_counts = {}
         for pet_name in adopted_pets:
-            pet = pets.get(pet_name)
+            pet = get_pet_by_name(pet_name)
             if pet:
                 rarity = pet["rarity"]
                 rarity_counts[rarity] = rarity_counts.get(rarity, 0) + 1
@@ -823,7 +823,7 @@ class Pets(commands.Cog):
             if rarity in rarity_counts:
                 embed.add_field(
                     name=f"{rarity} ({rarity_counts[rarity]})",
-                    value=", ".join([pet for pet in adopted_pets if pets.get(pet, {}).get("rarity") == rarity]),
+                    value=", ".join([pet for pet in adopted_pets if get_pet_by_name(pet) and get_pet_by_name(pet).get("rarity") == rarity]),
                     inline=False
                 )
         
@@ -849,7 +849,7 @@ class Pets(commands.Cog):
         # Get 10 random premium pets
         adopted_pets = []
         for _ in range(10):
-            pet = random.choice(list(pets.values()))
+            pet = random.choice(PETS)
             adopted_pets.append(pet["name"])
         
         # Add pets to user's collection
@@ -867,7 +867,7 @@ class Pets(commands.Cog):
         # Group pets by rarity for display
         rarity_counts = {}
         for pet_name in adopted_pets:
-            pet = pets.get(pet_name)
+            pet = get_pet_by_name(pet_name)
             if pet:
                 rarity = pet["rarity"]
                 rarity_counts[rarity] = rarity_counts.get(rarity, 0) + 1
@@ -877,7 +877,7 @@ class Pets(commands.Cog):
             if rarity in rarity_counts:
                 embed.add_field(
                     name=f"{rarity} ({rarity_counts[rarity]})",
-                    value=", ".join([pet for pet in adopted_pets if pets.get(pet, {}).get("rarity") == rarity]),
+                    value=", ".join([pet for pet in adopted_pets if get_pet_by_name(pet) and get_pet_by_name(pet).get("rarity") == rarity]),
                     inline=False
                 )
         

@@ -96,9 +96,98 @@ def create_tables():
         except Exception as e:
             print(f"Error creating table {table_name}: {e}")
     
+    # Run migrations to add missing columns
+    migrate_tables(cursor)
+    
     conn.commit()
     cursor.close()
     conn.close()
+
+def migrate_tables(cursor):
+    """Add missing columns to existing tables"""
+    try:
+        # Check if equipped_pets column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'equipped_pets'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN equipped_pets TEXT DEFAULT '[]'")
+            print("Added equipped_pets column to users table")
+        
+        # Check if battle_team column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'battle_team'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN battle_team TEXT DEFAULT '[]'")
+            print("Added battle_team column to users table")
+        
+        # Check if damaged_items column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'damaged_items'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN damaged_items TEXT DEFAULT '[]'")
+            print("Added damaged_items column to users table")
+        
+        # Check if equipped_gun column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'equipped_gun'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN equipped_gun VARCHAR(255)")
+            print("Added equipped_gun column to users table")
+        
+        # Check if daily_streak column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'daily_streak'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN daily_streak INTEGER DEFAULT 0")
+            print("Added daily_streak column to users table")
+        
+        # Check if weekly_streak column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'weekly_streak'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN weekly_streak INTEGER DEFAULT 0")
+            print("Added weekly_streak column to users table")
+        
+        # Check if inventory_value column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'inventory_value'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN inventory_value INTEGER DEFAULT 0")
+            print("Added inventory_value column to users table")
+        
+        # Check if created_at column exists in users table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'created_at'
+        """)
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            print("Added created_at column to users table")
+            
+    except Exception as e:
+        print(f"Error during migration: {e}")
 
 def get_table_structure(table_name):
     """Get the actual structure of a table from the database"""
@@ -178,19 +267,26 @@ def get_user(user_id):
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     user = cursor.fetchone()
     if not user:
-        # Create new user if not found with all the new fields
-        cursor.execute(
-            """INSERT INTO users (id, xp, level, credits, pets, inventory, equipped_weapon, 
-            last_daily, last_weekly, achievements, pet_stats, pet_last_train, mission_progress, 
-            quiz_last, team, team_role, team_points, last_mission_start, equipped_pets, 
-            damaged_items, equipped_gun, daily_streak, weekly_streak, inventory_value) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-            (user_id, 0, 1, 0, '[]', '[]', None, None, None, '[]', '{}', '{}', '{}', 
-             None, None, None, 0, None, None, '[]', None, 0, 0, 0)
-        )
-        conn.commit()
-        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-        user = cursor.fetchone()
+        # Create new user if not found - use a simpler INSERT that only includes basic fields
+        try:
+            cursor.execute(
+                """INSERT INTO users (id, xp, level, credits, pets, inventory) 
+                VALUES (%s, %s, %s, %s, %s, %s)""",
+                (user_id, 0, 1, 0, '[]', '[]')
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            user = cursor.fetchone()
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            # If INSERT fails, try to create with minimal fields
+            cursor.execute(
+                """INSERT INTO users (id) VALUES (%s)""",
+                (user_id,)
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            user = cursor.fetchone()
     
     # Convert TEXT fields that contain JSON data to Python objects
     json_fields = ['pets', 'inventory', 'achievements', 'pet_stats', 'pet_last_train', 'mission_progress', 'damaged_items', 'equipped_pets', 'battle_team']
