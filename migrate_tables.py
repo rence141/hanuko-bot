@@ -32,7 +32,8 @@ def migrate_tables():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS equipped_gun VARCHAR(255)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_streak INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS weekly_streak INTEGER DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS inventory_value INTEGER DEFAULT 0"
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS inventory_value INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS battle_team TEXT"
     ]
     
     for migration in user_migrations:

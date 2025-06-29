@@ -404,7 +404,7 @@ class Misc(commands.Cog):
             ("/inventory", "View your inventory."),
             ("/setrole", "Assign yourself a custom role from the allowed list."),
             ("/listcustomroles", "List all assignable custom roles for this server."),
-            ("/petbattle", "Battle your pets against another user's pets (1-3 pets per team). Uses your battle team or equipped pets automatically. Usage: /petbattle opponent:@User [mode:auto]"),
+            ("/petbattle", "Battle your pet against another user's equipped pet. Usage: /petbattle mypet:<your pet> opponent:@User"),
             ("/adoptpet", "Adopt a random pet (gacha). Usage: /adoptpet"),
             ("/adoptpet10x", "Adopt 10 random pets at once with 5% discount (2,375 credits instead of 2,500). Usage: /adoptpet10x"),
             ("/premiumpets", "Adopt a premium pet (gacha). Usage: /premiumpets"),
@@ -459,7 +459,7 @@ class Misc(commands.Cog):
             # Economy & Shop
             embed.add_field(name="__Economy & Shop__", value="/shop, /buy\n/inventory, /inv\n/equipgun", inline=False)
             # Pets
-            embed.add_field(name="__Pets__", value="/adoptpet, /adoptpet10x\n/premiumpets, /premiumpets10x\n/petbattle (1-3 pets, auto mode)\n/petbattleteam (set 1-3 pets)\n/equippet, /unequippet, /equippedpets\n/trainpet, /releasepet, /pets", inline=False)
+            embed.add_field(name="__Pets__", value="/adoptpet, /adoptpet10x\n/premiumpets, /premiumpets10x\n/petbattle (1v1, pick your pet vs opponent's equipped pet)\n/petbattleteam (set your default battle team)\n/equippet, /unequippet, /equippedpets\n/trainpet, /releasepet, /pets", inline=False)
             # Roles & Teams
             embed.add_field(name="__Roles & Teams__", value="/setrole, /listcustomroles\n/team, /jointeam, /leaveteam, /inviteteam", inline=False)
             # Marketplace & Trading
@@ -490,8 +490,8 @@ class Misc(commands.Cog):
             "inv": "Alias for /inventory.",
             "setrole": "Assign yourself a custom role from the allowed list. Usage: /setrole role_name:<role>",
             "listcustomroles": "List all assignable custom roles for this server. Usage: /listcustomroles",
-            "petbattle": "Battle your pets against another user's pets (1-3 pets per team). Uses your battle team or equipped pets automatically. Usage: /petbattle opponent:@User [mode:auto]",
-            "petbattleteam": "Set up your pet battle team (1-3 pets for battles). Usage: /petbattleteam",
+            "petbattle": "Battle your pet against another user's equipped pet. Usage: /petbattle mypet:<your pet> opponent:@User",
+            "petbattleteam": "Set up your default pet battle team (for future features). Usage: /petbattleteam",
             "equippedpets": "View and manage your equipped pets (up to 2 slots). Usage: /equippedpets",
             "adoptpet": "Adopt a random pet (gacha). Usage: /adoptpet",
             "adoptpet10x": "Adopt 10 random pets at once with 5% discount (2,375 credits instead of 2,500). Usage: /adoptpet10x",
@@ -659,7 +659,7 @@ class Misc(commands.Cog):
             )
             embed.add_field(name="Adoption", value="• `/adoptpet` - Adopt a random pet\n• `/premiumpets` - Adopt premium pets", inline=False)
             embed.add_field(name="Management", value="• `/pets` - View your pets\n• `/equippet` - Equip up to 2 pets\n• `/unequippet` - Unequip pets\n• `/equippedpets` - Manage equipped pets\n• `/releasepet` - Release a pet", inline=False)
-            embed.add_field(name="Battle System", value="• `/petbattle` - 3v3 pet battles (auto mode)\n• `/petbattleteam` - Set your battle team\n• `/trainpet` - Train your pets", inline=False)
+            embed.add_field(name="Battle System", value="• `/petbattle` - 1v1 pet battles (pick your pet, opponent uses equipped pet)\n• `/petbattleteam` - Set your default battle team\n• `/trainpet` - Train your pets", inline=False)
             embed.add_field(name="New Features", value="• **2-Slot System**: Equip up to 2 pets\n• **3v3 Battles**: Epic pet battles\n• **Battle Teams**: Set specific pets for battles\n• **Auto Mode**: Uses equipped pets automatically", inline=False)
             await interaction.response.edit_message(embed=embed, view=None)
 
