@@ -1249,11 +1249,11 @@ class Game(commands.Cog):
                     continue
                 filtered_users.append(u)
             print(f"[DEBUG] Filtered users: {filtered_users}")
-            # Sort by credits (primary), then XP (secondary), then level (tertiary)
+            # Sort by level (primary), then XP (secondary), then credits (tertiary)
             sorted_users = sorted(filtered_users, key=lambda x: (
-                x.get("credits", 0), 
+                x.get("level", 1), 
                 x.get("xp", 0), 
-                x.get("level", 1)
+                x.get("credits", 0)
             ), reverse=True)
             # Get top 10
             top_10 = sorted_users[:10]
