@@ -56,6 +56,37 @@ bot = HanukoBot(command_prefix=config.DEFAULT_PREFIX, intents=intents)
 async def on_ready():
     print(f"[DEBUG] Bot is ready. Logged in as {bot.user} (ID: {bot.user.id})")
     print(f"[DEBUG] Loaded {len(bot.commands)} legacy commands and {len(bot.tree.get_commands())} slash commands.")
+    
+    # Set custom presence - SCP Foundation themed
+    scp_activities = [
+        discord.Activity(type=discord.ActivityType.playing, name="SCP: Containment Breach"),
+        discord.Activity(type=discord.ActivityType.playing, name="SCP: Roleplay"),
+        discord.Activity(type=discord.ActivityType.playing, name="SCP Foundation"),
+        discord.Activity(type=discord.ActivityType.playing, name="Site-19 Operations"),
+        discord.Activity(type=discord.ActivityType.playing, name="Anomaly Containment"),
+        discord.Activity(type=discord.ActivityType.playing, name="SCP: Secret Laboratory"),
+        discord.Activity(type=discord.ActivityType.watching, name="SCP-173"),
+        discord.Activity(type=discord.ActivityType.watching, name="Containment Procedures"),
+        discord.Activity(type=discord.ActivityType.listening, name="Foundation Radio"),
+        discord.Activity(type=discord.ActivityType.playing, name="SCP: Unity")
+    ]
+    
+    # Set initial presence
+    await bot.change_presence(activity=scp_activities[0])
+    
+    # Start a background task to rotate presence every 30 seconds
+    async def rotate_presence():
+        while True:
+            try:
+                activity = random.choice(scp_activities)
+                await bot.change_presence(activity=activity)
+                await asyncio.sleep(30)  # Change every 30 seconds
+            except Exception as e:
+                print(f"[ERROR] Failed to update presence: {e}")
+                await asyncio.sleep(60)  # Wait longer if there's an error
+    
+    # Start the presence rotation task
+    bot.loop.create_task(rotate_presence())
 
 @bot.event
 async def on_message(message):
