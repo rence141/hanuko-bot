@@ -141,12 +141,19 @@ class Game(commands.Cog):
                     ]
                     silly_message = random.choice(silly_options)
             # Equipped pet logic
-            equipped_pet = user_data.get("equipped_pet")
-            print(f"[DEBUG] Equipped pet: {equipped_pet}")
-            pet_obj = get_pet_by_name(equipped_pet) if equipped_pet and equipped_pet in user_data.get("pets", []) else None
-            print(f"[DEBUG] Pet object: {pet_obj}")
-            pet_atk = pet_obj["atk"] if pet_obj else 0
-            pet_name = pet_obj["name"] if pet_obj else None
+            equipped_pets = user_data.get("equipped_pets", [])
+            pet_objs = []
+            total_pet_atk = 0
+            pet_names = []
+            
+            for pet_name in equipped_pets:
+                if pet_name in user_data.get("pets", []):
+                    pet_obj = get_pet_by_name(pet_name)
+                    if pet_obj:
+                        pet_objs.append(pet_obj)
+                        total_pet_atk += pet_obj["atk"]
+                        pet_names.append(pet_obj["name"])
+            
             # Default color
             pet_color = config.EMBED_COLORS["info"]
             rarity_emojis = {
@@ -167,10 +174,9 @@ class Game(commands.Cog):
                 "Mythic": discord.Color.red(),
                 "Classified": discord.Color.default()  # Black/neutral
             }
-            if equipped_pet:
-                emoji = rarity_emojis.get(pet_obj['rarity'], "") if pet_obj else ""
-                pet_display = f"{emoji} [{pet_obj['name']}] ({pet_obj['rarity']})" if pet_obj else equipped_pet
-                pet_color = rarity_colors.get(pet_obj['rarity'], config.EMBED_COLORS["info"]) if pet_obj else config.EMBED_COLORS["info"]
+            if pet_objs:
+                pet_display = ", ".join([f"{rarity_emojis.get(pet_obj['rarity'], '')} [{pet_obj['name']}] ({pet_obj['rarity']})" for pet_obj in pet_objs])
+                pet_color = rarity_colors.get(pet_objs[0]['rarity'], config.EMBED_COLORS["info"]) if pet_objs else config.EMBED_COLORS["info"]
             else:
                 pet_display = "None"
             print(f"[DEBUG] Pet display: {pet_display}, pet color: {pet_color}")
@@ -198,7 +204,7 @@ class Game(commands.Cog):
             embed.add_field(name="Daily Streak", value=f"🔥 {daily_streak} days", inline=True)
             embed.add_field(name="Weekly Streak", value=f"🔥 {weekly_streak} weeks", inline=True)
             
-            embed.add_field(name="Equipped Pet", value=pet_display, inline=False)
+            embed.add_field(name="Equipped Pets", value=pet_display, inline=False)
             # Inventory with gun condition
             inventory_display = []
             for item in user_data.get("inventory", []):
@@ -565,13 +571,14 @@ class Game(commands.Cog):
             except Exception:
                 pass
 
-    @app_commands.command(name="leaderboard", description="Show the top 10 users by credits")
+    @app_commands.command(name="leaderboard", description="Show the top 10 users by level")
     async def leaderboard(self, interaction: discord.Interaction):
         print(f"[DEBUG] /leaderboard called by {interaction.user}")
         users = get_all_users()
-        users.sort(key=lambda u: (u.get("credits", 0), u.get("xp", 0), u.get("level", 1)), reverse=True)
+        # Sort by level (primary), then XP (secondary), then credits (tertiary)
+        users.sort(key=lambda u: (u.get("level", 1), u.get("xp", 0), u.get("credits", 0)), reverse=True)
         embed = discord.Embed(
-            title="🏆 Leaderboard (Top 10 by Credits)",
+            title="🏆 Leaderboard (Top 10 by Level)",
             color=config.EMBED_COLORS["info"]
         )
         for i, user in enumerate(users[:10], 1):
@@ -582,7 +589,7 @@ class Game(commands.Cog):
                 name = f"**Unknown User ({user['id']})**"
             embed.add_field(
                 name=f"#{i}",
-                value=f"{name}\nCredits: {user.get('credits', 0)} | XP: {user.get('xp', 0)} | Level: {user.get('level', 1)}",
+                value=f"{name}\nLevel: {user.get('level', 1)} | XP: {user.get('xp', 0)} | Credits: {user.get('credits', 0)}",
                 inline=False
             )
         await interaction.response.send_message(embed=embed)
@@ -649,14 +656,24 @@ class Game(commands.Cog):
                     user_atk += int(WEAPON_BONUS[equipped_weapon] * 0.5)  # 50% damage if damaged
                 else:
                     user_atk += WEAPON_BONUS[equipped_weapon]
-            # Equipped pet logic
-            equipped_pet = user_data.get("equipped_pet")
-            pet_obj = get_pet_by_name(equipped_pet) if equipped_pet and equipped_pet in user_data.get("pets", []) else None
-            pet_atk = pet_obj["atk"] if pet_obj else 0
-            pet_name = pet_obj["name"] if pet_obj else None
+            # Equipped pets logic
+            equipped_pets = user_data.get("equipped_pets", [])
+            pet_objs = []
+            total_pet_atk = 0
+            pet_names = []
+            
+            for pet_name in equipped_pets:
+                if pet_name in user_data.get("pets", []):
+                    pet_obj = get_pet_by_name(pet_name)
+                    if pet_obj:
+                        pet_objs.append(pet_obj)
+                        total_pet_atk += pet_obj["atk"]
+                        pet_names.append(pet_obj["name"])
+            
             # Battle log
+            pet_info = f" | Pets: {', '.join(pet_names)} (Total ATK: {total_pet_atk})" if pet_objs else ""
             log = [f"You encounter **{scp['name']}**! {scp['desc']}",
-                   f"Your HP: {user_hp} | ATK: {user_atk}" + (f" | Pet: {pet_name} (ATK: {pet_atk})" if pet_obj else ""),
+                   f"Your HP: {user_hp} | ATK: {user_atk}{pet_info}",
                    f"SCP HP: {scp_hp} | ATK: {scp_atk}"]
             turn = 1
             u_hp, s_hp = user_hp, scp_hp
@@ -670,10 +687,13 @@ class Game(commands.Cog):
                 else:
                     log.append(f"Turn {turn}:DANGER! You have no usable weapon!")
                 # Pet attacks (if present)
-                if pet_obj and s_hp > 0:
-                    pet_dmg = random.randint(int(pet_atk*0.8), int(pet_atk*1.2))
-                    s_hp -= pet_dmg
-                    log.append(f"Turn {turn}: Your pet {pet_name} attacks {scp['name']} for {pet_dmg} damage! SCP HP: {max(s_hp,0)}")
+                if pet_objs and s_hp > 0:
+                    for pet_obj in pet_objs:
+                        if s_hp <= 0:
+                            break
+                        pet_dmg = random.randint(int(pet_obj["atk"]*0.8), int(pet_obj["atk"]*1.2))
+                        s_hp -= pet_dmg
+                        log.append(f"Turn {turn}: Your pet {pet_obj['name']} attacks {scp['name']} for {pet_dmg} damage! SCP HP: {max(s_hp,0)}")
                 if s_hp <= 0:
                     break
                 # SCP attacks

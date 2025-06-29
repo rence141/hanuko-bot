@@ -33,7 +33,8 @@ SCHEMA = {
         'team_role': 'VARCHAR(50)',
         'team_points': 'INTEGER DEFAULT 0',
         'last_mission_start': 'TIMESTAMP',
-        'equipped_pet': 'VARCHAR(255)',
+        'equipped_pets': 'TEXT DEFAULT \'[]\'',
+        'battle_team': 'TEXT DEFAULT \'[]\'',
         'damaged_items': 'TEXT',
         'equipped_gun': 'VARCHAR(255)',
         'daily_streak': 'INTEGER DEFAULT 0',
@@ -181,7 +182,7 @@ def get_user(user_id):
         cursor.execute(
             """INSERT INTO users (id, xp, level, credits, pets, inventory, equipped_weapon, 
             last_daily, last_weekly, achievements, pet_stats, pet_last_train, mission_progress, 
-            quiz_last, team, team_role, team_points, last_mission_start, equipped_pet, 
+            quiz_last, team, team_role, team_points, last_mission_start, equipped_pets, 
             damaged_items, equipped_gun, daily_streak, weekly_streak, inventory_value) 
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (user_id, 0, 1, 0, '[]', '[]', None, None, None, '[]', '{}', '{}', '{}', 
@@ -192,16 +193,16 @@ def get_user(user_id):
         user = cursor.fetchone()
     
     # Convert TEXT fields that contain JSON data to Python objects
-    json_fields = ['pets', 'inventory', 'achievements', 'pet_stats', 'pet_last_train', 'mission_progress', 'damaged_items']
+    json_fields = ['pets', 'inventory', 'achievements', 'pet_stats', 'pet_last_train', 'mission_progress', 'damaged_items', 'equipped_pets', 'battle_team']
     for field in json_fields:
         if user[field]:
             try:
                 user[field] = json.loads(user[field]) if isinstance(user[field], str) else user[field]
             except json.JSONDecodeError:
                 # If it's not valid JSON, treat as empty
-                user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items'] else {}
+                user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items', 'equipped_pets', 'battle_team'] else {}
         else:
-            user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items'] else {}
+            user[field] = [] if field in ['pets', 'inventory', 'achievements', 'damaged_items', 'equipped_pets', 'battle_team'] else {}
     
     cursor.close()
     conn.close()
