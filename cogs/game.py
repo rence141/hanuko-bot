@@ -1294,10 +1294,17 @@ class Game(commands.Cog):
             await interaction.response.send_message(embed=embed)
         except Exception as e:
             print(f"[ERROR] gleaderboard command error: {e}")
-            await interaction.response.send_message(
-                "❌ An error occurred while loading the global leaderboard. Please try again.",
-                ephemeral=True
-            )
+            # Use followup.send() instead of response.send_message() to avoid "already acknowledged" error
+            try:
+                await interaction.followup.send(
+                    "❌ An error occurred while loading the global leaderboard. Please try again.",
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                # If the interaction is already gone, we can't send a followup either
+                print(f"[ERROR] Could not send followup for gleaderboard error: {e}")
+            except Exception as followup_error:
+                print(f"[ERROR] Followup send failed: {followup_error}")
 
 async def setup(bot):
     await bot.add_cog(Game(bot))
