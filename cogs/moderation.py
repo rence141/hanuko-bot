@@ -1,12 +1,19 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 from discord import app_commands
-import config
+
+# Try to import config, fall back to config_fallback if not available
+try:
+    import config
+except ImportError:
+    import config_fallback as config
+
 import json
-from datetime import datetime, timedelta
 import os
-import re
+import time
+from datetime import datetime, timedelta
 from collections import defaultdict, deque
+import re
 
 WARNINGS_FILE = "warnings.json"
 AUTODETECT_FILE = "autodetect.json"

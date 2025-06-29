@@ -1,7 +1,13 @@
 from discord.ext import commands, tasks
 import discord
 from discord import app_commands
-import config
+
+# Try to import config, fall back to config_fallback if not available
+try:
+    import config
+except ImportError:
+    import config_fallback as config
+
 import os
 import time
 import json

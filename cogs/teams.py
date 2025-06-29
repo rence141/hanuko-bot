@@ -1,7 +1,18 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 from discord import app_commands
-import config
+
+# Try to import config, fall back to config_fallback if not available
+try:
+    import config
+except ImportError:
+    import config_fallback as config
+
+import random
+import json
+import os
+import time
+from datetime import datetime, timedelta
 from db import get_user, update_user, get_team, update_team, get_all_users
 
 TEAM_ROLES = ["Owner", "Deputy", "Officer", "Member"]

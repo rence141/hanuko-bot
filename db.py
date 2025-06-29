@@ -3,10 +3,14 @@ import psycopg2
 import psycopg2.extras
 import json
 import os
-import config
 
-# PostgreSQL connection settings (using config)
-db_config = config.DB_CONFIG
+# Try to import config, fall back to config_fallback if not available
+try:
+    import config
+    db_config = config.DB_CONFIG
+except ImportError:
+    import config_fallback as config
+    db_config = config.DB_CONFIG
 
 # Database Schema Definition - Your bot knows about tables and columns here
 SCHEMA = {
