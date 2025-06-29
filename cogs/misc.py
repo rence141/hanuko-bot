@@ -526,12 +526,6 @@ class Misc(commands.Cog):
             embed.add_field(name="Items", value="No items yet. Use /shop and /buy!", inline=False)
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="lb", description="Alias for /leaderboard")
-    @slowmode.__func__()
-    async def lb(self, interaction: discord.Interaction):
-        from cogs.game import Game
-        await Game.leaderboard(self.cog, interaction)
-
     @app_commands.command(name="modhelp", description="Show help for moderator commands")
     @slowmode.__func__()
     async def modhelp(self, interaction: discord.Interaction):
