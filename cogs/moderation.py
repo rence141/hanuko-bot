@@ -231,13 +231,13 @@ class Moderation(commands.Cog):
                 await message.channel.send(f"{message.author.mention}, your message was removed for inappropriate language.", delete_after=5)
 
     @app_commands.command(name="announcement", description="Send a server announcement (mod only)")
-    @app_commands.describe(message="The announcement message")
+    @app_commands.describe(announcement_text="The announcement message to send")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def announcement(self, interaction: discord.Interaction, message: str):
-        print(f"[DEBUG] /announcement called by {interaction.user} with message: {message}")
+    async def announcement(self, interaction: discord.Interaction, announcement_text: str):
+        print(f"[DEBUG] /announcement called by {interaction.user} with message: {announcement_text}")
         embed = discord.Embed(
             title="📢 Announcement",
-            description=message,
+            description=announcement_text,
             color=config.EMBED_COLORS["mod"]
         )
         embed.set_footer(text=f"Announcement by {interaction.user.display_name}")
