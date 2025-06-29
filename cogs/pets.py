@@ -320,69 +320,63 @@ class Pets(commands.Cog):
         update_user(interaction.user.id, pet_stats=user_data["pet_stats"], pet_last_train=user_data["pet_last_train"])
         await interaction.response.send_message(f"🐾 {pet_name} trained! Power is now {stats['power']}.")
 
-    async def petbattle_mode_autocomplete(self, interaction: discord.Interaction, current: str):
-        modes = ["auto", "manual"]
+    async def petbattle_autocomplete(self, interaction: discord.Interaction, current: str):
+        user_data = get_user(interaction.user.id)
+        owned_pets = user_data.get("pets", [])
         return [
-            app_commands.Choice(name=mode, value=mode)
-            for mode in modes if current.lower() in mode.lower()
-        ]
+            app_commands.Choice(name=pet, value=pet)
+            for pet in owned_pets if current.lower() in pet.lower()
+        ][:25]  # Discord max autocomplete options
 
-    @app_commands.command(name="petbattle", description="Battle your pets against another user's pets (3v3)")
+    @app_commands.command(name="petbattle", description="Battle your pet against another user's equipped pet")
     @app_commands.describe(
-        opponent="The user to battle", 
-        mode="Battle mode: auto (use battle team/equipped pets) or manual (specify pets)"
+        mypet="Your pet to use in battle", 
+        opponent="The user to battle (uses their equipped pet)"
     )
-    @app_commands.autocomplete(mode=petbattle_mode_autocomplete)
-    async def petbattle(self, interaction: discord.Interaction, opponent: discord.Member, mode: str = "auto"):
-        print(f"[DEBUG] /petbattle called by {interaction.user} vs {opponent.display_name} in {mode} mode")
+    @app_commands.autocomplete(mypet=petbattle_autocomplete)
+    async def petbattle(self, interaction: discord.Interaction, mypet: str, opponent: discord.Member):
+        print(f"[DEBUG] /petbattle called by {interaction.user} with {mypet} vs {opponent.display_name}")
+        
+        # Check if mypet is "delete" to handle deletion
+        if mypet.lower() == "delete":
+            await interaction.response.send_message("❌ To delete a battle, please use a different command or contact a moderator.", ephemeral=True)
+            return
         
         user_data = get_user(interaction.user.id)
         opp_data = get_user(opponent.id)
         
-        # Check if both users have at least 1 pet
+        # Check if user owns the pet
         user_pets = user_data.get("pets", [])
+        if mypet not in user_pets:
+            await interaction.response.send_message(f"❌ You do not own a pet named '{mypet}'.", ephemeral=True)
+            return
+        
+        # Check if opponent has equipped pets
+        opp_equipped_pets = opp_data.get("equipped_pets", [])
+        if not opp_equipped_pets:
+            await interaction.response.send_message(f"❌ {opponent.display_name} has no equipped pets to battle against.", ephemeral=True)
+            return
+        
+        # Use the first equipped pet of the opponent
+        opponent_pet = opp_equipped_pets[0]
+        
+        # Validate opponent's pet exists in their collection
         opp_pets = opp_data.get("pets", [])
+        if opponent_pet not in opp_pets:
+            await interaction.response.send_message(f"❌ {opponent.display_name}'s equipped pet '{opponent_pet}' is not in their collection.", ephemeral=True)
+            return
         
-        if len(user_pets) < 1:
-            await interaction.response.send_message(f"❌ You need at least 1 pet to participate in pet battles. You have {len(user_pets)} pets.", ephemeral=True)
+        # Get pet objects
+        my_pet_obj = get_pet_by_name(mypet)
+        opp_pet_obj = get_pet_by_name(opponent_pet)
+        
+        if not my_pet_obj:
+            await interaction.response.send_message(f"❌ Pet '{mypet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
             return
             
-        if len(opp_pets) < 1:
-            await interaction.response.send_message(f"❌ {opponent.display_name} needs at least 1 pet to participate in pet battles. They have {len(opp_pets)} pets.", ephemeral=True)
+        if not opp_pet_obj:
+            await interaction.response.send_message(f"❌ {opponent.display_name}'s pet '{opponent_pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
             return
-        
-        # Get battle pets based on mode
-        if mode.lower() == "auto":
-            # Use battle team for auto mode
-            user_battle_pets = user_data.get("battle_team", [])
-            opp_battle_pets = opp_data.get("battle_team", [])
-            
-            # If no battle team set, use equipped pets as fallback
-            if len(user_battle_pets) < 1:
-                user_battle_pets = user_data.get("equipped_pets", [])
-                if len(user_battle_pets) < 1:
-                    user_battle_pets = user_pets[:1]  # Use at least 1 pet
-                    
-            if len(opp_battle_pets) < 1:
-                opp_battle_pets = opp_data.get("equipped_pets", [])
-                if len(opp_battle_pets) < 1:
-                    opp_battle_pets = opp_pets[:1]  # Use at least 1 pet
-                    
-        else:
-            # Manual mode - would need to be implemented with pet selection
-            await interaction.response.send_message("❌ Manual mode not implemented yet. Use 'auto' mode.", ephemeral=True)
-            return
-        
-        # Validate battle pets
-        for pet in user_battle_pets:
-            if pet not in user_pets:
-                await interaction.response.send_message(f"❌ You do not own '{pet}'.", ephemeral=True)
-                return
-                
-        for pet in opp_battle_pets:
-            if pet not in opp_pets:
-                await interaction.response.send_message(f"❌ {opponent.display_name} does not own '{pet}'.", ephemeral=True)
-                return
         
         # Start the battle
         embed = discord.Embed(
@@ -391,38 +385,24 @@ class Pets(commands.Cog):
             color=0xff6b6b
         )
         
-        # Show teams
-        user_team = "\n".join([f"• {pet}" for pet in user_battle_pets])
-        opp_team = "\n".join([f"• {pet}" for pet in opp_battle_pets])
-        
-        embed.add_field(name=f"{interaction.user.display_name}'s Team ({len(user_battle_pets)} pets)", value=user_team, inline=True)
-        embed.add_field(name=f"{opponent.display_name}'s Team ({len(opp_battle_pets)} pets)", value=opp_team, inline=True)
-        
-        # Add warnings for smaller teams
-        warnings = []
-        if len(user_battle_pets) < 3:
-            warnings.append(f"⚠️ {interaction.user.display_name} has fewer than 3 pets - this is a disadvantage!")
-        if len(opp_battle_pets) < 3:
-            warnings.append(f"⚠️ {opponent.display_name} has fewer than 3 pets - this is a disadvantage!")
-        
-        if warnings:
-            embed.add_field(name="Battle Warnings", value="\n".join(warnings), inline=False)
+        # Show battle pets
+        embed.add_field(
+            name=f"{interaction.user.display_name}'s Pet", 
+            value=f"{mypet} (HP: {my_pet_obj['hp']}, ATK: {my_pet_obj['atk']})", 
+            inline=True
+        )
+        embed.add_field(
+            name=f"{opponent.display_name}'s Pet", 
+            value=f"{opponent_pet} (HP: {opp_pet_obj['hp']}, ATK: {opp_pet_obj['atk']})", 
+            inline=True
+        )
         
         await interaction.response.send_message(embed=embed)
         
         # Simulate battle
         battle_log = []
-        user_pets_hp = {}
-        opp_pets_hp = {}
-        
-        # Initialize HP for all pets
-        for pet in user_battle_pets:
-            pet_obj = get_pet_by_name(pet)
-            user_pets_hp[pet] = pet_obj["hp"] if pet_obj else 100
-            
-        for pet in opp_battle_pets:
-            pet_obj = get_pet_by_name(pet)
-            opp_pets_hp[pet] = pet_obj["hp"] if pet_obj else 100
+        my_pet_hp = my_pet_obj["hp"]
+        opp_pet_hp = opp_pet_obj["hp"]
         
         battle_log.append("🎯 Battle begins!")
         
@@ -431,39 +411,25 @@ class Pets(commands.Cog):
         while round_num <= 10:  # Max 10 rounds
             battle_log.append(f"\n**Round {round_num}**")
             
-            # User pets attack
-            for pet in user_battle_pets:
-                if user_pets_hp[pet] > 0:
-                    # Find alive opponent pet to attack
-                    alive_opp_pets = [p for p in opp_battle_pets if opp_pets_hp[p] > 0]
-                    if alive_opp_pets:
-                        target = random.choice(alive_opp_pets)
-                        pet_obj = get_pet_by_name(pet)
-                        damage = random.randint(int(pet_obj["atk"] * 0.8), int(pet_obj["atk"] * 1.2)) if pet_obj else 10
-                        opp_pets_hp[target] = max(0, opp_pets_hp[target] - damage)
-                        battle_log.append(f"⚔️ {pet} attacks {target} for {damage} damage!")
-            
-            # Check if opponent is defeated
-            if all(hp <= 0 for hp in opp_pets_hp.values()):
-                battle_log.append(f"🏆 **{interaction.user.display_name} wins!**")
-                break
+            # Your pet attacks
+            if my_pet_hp > 0:
+                damage = random.randint(int(my_pet_obj["atk"] * 0.8), int(my_pet_obj["atk"] * 1.2))
+                opp_pet_hp = max(0, opp_pet_hp - damage)
+                battle_log.append(f"⚔️ {mypet} attacks {opponent_pet} for {damage} damage!")
                 
-            # Opponent pets attack
-            for pet in opp_battle_pets:
-                if opp_pets_hp[pet] > 0:
-                    # Find alive user pet to attack
-                    alive_user_pets = [p for p in user_battle_pets if user_pets_hp[p] > 0]
-                    if alive_user_pets:
-                        target = random.choice(alive_user_pets)
-                        pet_obj = get_pet_by_name(pet)
-                        damage = random.randint(int(pet_obj["atk"] * 0.8), int(pet_obj["atk"] * 1.2)) if pet_obj else 10
-                        user_pets_hp[target] = max(0, user_pets_hp[target] - damage)
-                        battle_log.append(f"⚔️ {pet} attacks {target} for {damage} damage!")
+                if opp_pet_hp <= 0:
+                    battle_log.append(f"🏆 **{interaction.user.display_name} wins!**")
+                    break
             
-            # Check if user is defeated
-            if all(hp <= 0 for hp in user_pets_hp.values()):
-                battle_log.append(f"🏆 **{opponent.display_name} wins!**")
-                break
+            # Opponent pet attacks
+            if opp_pet_hp > 0:
+                damage = random.randint(int(opp_pet_obj["atk"] * 0.8), int(opp_pet_obj["atk"] * 1.2))
+                my_pet_hp = max(0, my_pet_hp - damage)
+                battle_log.append(f"⚔️ {opponent_pet} attacks {mypet} for {damage} damage!")
+                
+                if my_pet_hp <= 0:
+                    battle_log.append(f"🏆 **{opponent.display_name} wins!**")
+                    break
                 
             round_num += 1
         
@@ -474,7 +440,7 @@ class Pets(commands.Cog):
         result_embed = discord.Embed(
             title="🐾 Battle Results",
             description="\n".join(battle_log),
-            color=0x00ff00 if all(hp <= 0 for hp in opp_pets_hp.values()) else 0xff0000
+            color=0x00ff00 if opp_pet_hp <= 0 else 0xff0000
         )
         
         await interaction.followup.send(embed=result_embed)
