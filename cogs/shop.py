@@ -467,21 +467,6 @@ class Shop(commands.Cog):
         save_trades(trades)
         await interaction.response.send_message(f"✅ Trade cancelled and your offered items/pets have been returned.", ephemeral=True)
 
-    @app_commands.command(name="bal", description="Alias for /checkcredits")
-    @app_commands.describe(user="The user to check (leave blank for yourself)")
-    async def bal(self, interaction: discord.Interaction, user: discord.Member = None):
-        game_cog = interaction.client.get_cog('Game')
-        if not game_cog:
-            await interaction.response.send_message("❌ [DEBUG] Could not find the Game cog.", ephemeral=True)
-            return
-        if not hasattr(game_cog, 'checkcredits'):
-            await interaction.response.send_message("❌ [DEBUG] Game cog does not have a checkcredits method.", ephemeral=True)
-            return
-        try:
-            await game_cog.checkcredits.callback(game_cog, interaction, user, True)
-        except Exception as e:
-            await interaction.response.send_message(f"❌ [DEBUG] Exception in checkcredits: {e}", ephemeral=True)
-
     @app_commands.command(name="equipgun", description="Equip a gun from your inventory.")
     @app_commands.describe(gun="The name of the gun to equip")
     async def equipgun(self, interaction: discord.Interaction, gun: str):
