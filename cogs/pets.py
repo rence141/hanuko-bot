@@ -678,16 +678,7 @@ class Pets(commands.Cog):
         view = PetSelect(interaction.user.id, owned_pets)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    async def petbattleteam_autocomplete(self, interaction: discord.Interaction, current: str):
-        user_data = get_user(interaction.user.id)
-        owned_pets = user_data.get("pets", [])
-        return [
-            app_commands.Choice(name=pet, value=pet)
-            for pet in owned_pets if current.lower() in pet.lower()
-        ][:25]  # Discord max autocomplete options
-
     @app_commands.command(name="petbattleteam", description="Set up your pet battle team (1-3 pets for battles)")
-    @app_commands.autocomplete(pet=petbattleteam_autocomplete)
     async def petbattleteam(self, interaction: discord.Interaction):
         print(f"[DEBUG] /petbattleteam called by {interaction.user}")
         user_data = get_user(interaction.user.id)
