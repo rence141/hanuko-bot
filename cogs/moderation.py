@@ -19,6 +19,7 @@ WARNINGS_FILE = "warnings.json"
 AUTODETECT_FILE = "autodetect.json"
 MUTED_FILE = "muted.json"
 AUTOMOD_CONFIG_FILE = "automod_config.json"
+MODLOG_CONFIG_FILE = "modlog_config.json"
 FORBIDDEN_WORDS = [
     # Common English profanities and slurs (no religious words)
     "fuck", "shit", "bitch", "nigger", "fag", "faggot", "asshole", "dick", "cunt", "bastard", "slut", "whore", "piss", "cock", "retard", "moron", "douche", "jackass", "twat", "crap", "prick", "wanker", "arse", "dipshit", "dumbass", "jackoff", "jerkoff", "motherfucker", "bullshit", "dildo", "pussy", "tit", "tits", "cum", "suck", "screwed", "screwing", "bimbo", "skank", "tramp", "hoe", "spaz", "spastic"
@@ -64,11 +65,22 @@ def save_automod_config(config_data):
     with open(AUTOMOD_CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config_data, f, indent=4)
 
+def load_modlog_config():
+    if not os.path.exists(MODLOG_CONFIG_FILE):
+        return {}
+    with open(MODLOG_CONFIG_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_modlog_config(config_data):
+    with open(MODLOG_CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(config_data, f, indent=4)
+
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.autodetect = load_autodetect()
         self.automod_config = load_automod_config()
+        self.modlog_config = load_modlog_config()
         # Spam tracking: {guild_id: {user_id: deque of timestamps}}
         self.spam_tracker = defaultdict(lambda: defaultdict(lambda: deque(maxlen=10)))
         # Message tracking for caps and emoji spam
@@ -77,6 +89,7 @@ class Moderation(commands.Cog):
     async def cog_unload(self):
         save_autodetect(self.autodetect)
         save_automod_config(self.automod_config)
+        save_modlog_config(self.modlog_config)
 
     def get_guild_config(self, guild_id):
         """Get automod config for a guild, with defaults"""
@@ -230,14 +243,49 @@ class Moderation(commands.Cog):
                     pass
                 await message.channel.send(f"{message.author.mention}, your message was removed for inappropriate language.", delete_after=5)
 
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        if message.guild and not message.author.bot:
+            log_channel = self.get_log_channel(message.guild)
+            if log_channel:
+                embed = discord.Embed(
+                    title="Message Deleted",
+                    description=f"Message by {message.author.mention} deleted in {message.channel.mention}",
+                    color=discord.Color.orange(),
+                    timestamp=datetime.utcnow()
+                )
+                if message.content:
+                    embed.add_field(name="Content", value=message.content[:1024], inline=False)
+                embed.set_footer(text=f"User ID: {message.author.id} | Message ID: {message.id}")
+                await log_channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        if (
+            before.guild and not before.author.bot and
+            before.content != after.content
+        ):
+            log_channel = self.get_log_channel(before.guild)
+            if log_channel:
+                embed = discord.Embed(
+                    title="Message Edited",
+                    description=f"Message by {before.author.mention} edited in {before.channel.mention}",
+                    color=discord.Color.blue(),
+                    timestamp=datetime.utcnow()
+                )
+                embed.add_field(name="Before", value=before.content[:1024] if before.content else "(no content)", inline=False)
+                embed.add_field(name="After", value=after.content[:1024] if after.content else "(no content)", inline=False)
+                embed.set_footer(text=f"User ID: {before.author.id} | Message ID: {before.id}")
+                await log_channel.send(embed=embed)
+
     @app_commands.command(name="announcement", description="Send a server announcement (mod only)")
-    @app_commands.describe(announcement_text="The announcement message to send (supports multiple lines)")
+    @app_commands.describe(announcement_text="The announcement message to send (use \\n for new lines)")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def announcement(self, interaction: discord.Interaction, announcement_text: str):
         print(f"[DEBUG] /announcement called by {interaction.user} with message: {announcement_text}")
         
-        # Handle multi-line text properly
-        formatted_text = announcement_text.replace('\n', '\n')  # Preserve line breaks
+        # Support multi-line text using \\n
+        formatted_text = announcement_text.replace('\\n', '\n')
         
         embed = discord.Embed(
             title="📢 Announcement",
@@ -265,6 +313,16 @@ class Moderation(commands.Cog):
             await user.send(f"You have been warned in {interaction.guild.name} for: {reason}")
         except Exception:
             pass
+        # Log to mod channel
+        log_channel = self.get_log_channel(interaction.guild)
+        if log_channel:
+            embed = discord.Embed(
+                title="User Warned",
+                description=f"{user.mention} was warned by {interaction.user.mention}\nReason: {reason}",
+                color=discord.Color.orange(),
+                timestamp=datetime.utcnow()
+            )
+            await log_channel.send(embed=embed)
 
     @app_commands.command(name="warnings", description="List a user's warnings")
     @app_commands.describe(user="The user to check warnings for")
@@ -303,6 +361,16 @@ class Moderation(commands.Cog):
             del warnings[str(user.id)]
             save_warnings(warnings)
             await interaction.response.send_message(f"✅ Cleared all warnings for {user.mention}.")
+            # Log to mod channel
+            log_channel = self.get_log_channel(interaction.guild)
+            if log_channel:
+                embed = discord.Embed(
+                    title="Warnings Cleared",
+                    description=f"All warnings for {user.mention} were cleared by {interaction.user.mention}",
+                    color=discord.Color.green(),
+                    timestamp=datetime.utcnow()
+                )
+                await log_channel.send(embed=embed)
         else:
             await interaction.response.send_message(f"{user.mention} has no warnings.")
 
@@ -314,6 +382,16 @@ class Moderation(commands.Cog):
         try:
             await user.kick(reason=reason)
             await interaction.response.send_message(f"👢 {user.mention} has been kicked. Reason: {reason}")
+            # Log to mod channel
+            log_channel = self.get_log_channel(interaction.guild)
+            if log_channel:
+                embed = discord.Embed(
+                    title="User Kicked",
+                    description=f"{user.mention} was kicked by {interaction.user.mention}\nReason: {reason}",
+                    color=discord.Color.red(),
+                    timestamp=datetime.utcnow()
+                )
+                await log_channel.send(embed=embed)
         except Exception as e:
             await interaction.response.send_message(f"Failed to kick {user.mention}: {e}", ephemeral=True)
 
@@ -325,6 +403,16 @@ class Moderation(commands.Cog):
         try:
             await user.ban(reason=reason)
             await interaction.response.send_message(f"🔨 {user.mention} has been banned. Reason: {reason}")
+            # Log to mod channel
+            log_channel = self.get_log_channel(interaction.guild)
+            if log_channel:
+                embed = discord.Embed(
+                    title="User Banned",
+                    description=f"{user.mention} was banned by {interaction.user.mention}\nReason: {reason}",
+                    color=discord.Color.dark_red(),
+                    timestamp=datetime.utcnow()
+                )
+                await log_channel.send(embed=embed)
         except Exception as e:
             await interaction.response.send_message(f"Failed to ban {user.mention}: {e}", ephemeral=True)
 
@@ -337,6 +425,16 @@ class Moderation(commands.Cog):
             user = await self.bot.fetch_user(int(user_id))
             await interaction.guild.unban(user)
             await interaction.response.send_message(f"✅ Unbanned {user.mention}.")
+            # Log to mod channel
+            log_channel = self.get_log_channel(interaction.guild)
+            if log_channel:
+                embed = discord.Embed(
+                    title="User Unbanned",
+                    description=f"{user.mention} was unbanned by {interaction.user.mention}",
+                    color=discord.Color.green(),
+                    timestamp=datetime.utcnow()
+                )
+                await log_channel.send(embed=embed)
         except Exception as e:
             await interaction.response.send_message(f"Failed to unban user {user_id}: {e}", ephemeral=True)
 
@@ -509,6 +607,16 @@ class Moderation(commands.Cog):
             await user.send(f"You have been muted in {interaction.guild.name} for {duration}. Reason: {reason}")
         except Exception:
             pass
+        # Log to mod channel
+        log_channel = self.get_log_channel(interaction.guild)
+        if log_channel:
+            embed = discord.Embed(
+                title="User Muted",
+                description=f"{user.mention} was muted by {interaction.user.mention}\nDuration: {duration}\nReason: {reason}",
+                color=discord.Color.purple(),
+                timestamp=datetime.utcnow()
+            )
+            await log_channel.send(embed=embed)
 
     @app_commands.command(name="unmute", description="Unmute a user (mod only)")
     @app_commands.describe(user="The user to unmute")
@@ -524,8 +632,34 @@ class Moderation(commands.Cog):
                 await user.send(f"You have been unmuted in {interaction.guild.name}.")
             except Exception:
                 pass
+            # Log to mod channel
+            log_channel = self.get_log_channel(interaction.guild)
+            if log_channel:
+                embed = discord.Embed(
+                    title="User Unmuted",
+                    description=f"{user.mention} was unmuted by {interaction.user.mention}",
+                    color=discord.Color.green(),
+                    timestamp=datetime.utcnow()
+                )
+                await log_channel.send(embed=embed)
         else:
             await interaction.response.send_message(f"{user.mention} is not muted.")
+
+    @app_commands.command(name="setlogchannel", description="Set the moderation log channel (admin only)")
+    @app_commands.describe(channel="The channel to use for moderation logs")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def setlogchannel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        guild_id = str(interaction.guild.id)
+        self.modlog_config[guild_id] = channel.id
+        save_modlog_config(self.modlog_config)
+        await interaction.response.send_message(f"✅ Log channel set to {channel.mention}")
+
+    def get_log_channel(self, guild):
+        guild_id = str(guild.id)
+        channel_id = self.modlog_config.get(guild_id)
+        if channel_id:
+            return guild.get_channel(channel_id)
+        return None
 
 async def setup(bot):
     await bot.add_cog(Moderation(bot)) 

@@ -148,15 +148,7 @@ async def on_message(message):
                         "notes": "Coordinates research efforts across multiple SCPs. [REDACTED] - Claims to have seen SCP-096's face and survived. Investigation ongoing.",
                         "specialization": "Cross-SCP Research & Data Analysis"
                     },
-                    "shyshi": {
-                        "name": "Shyshi",
-                        "title": "Psychological Evaluator",
-                        "clearance": "Level 4",
-                        "department": "Psychology Division",
-                        "status": "Active",
-                        "notes": "Evaluates personnel mental health after SCP encounters. [REDACTED] - Claims to have communicated with SCP-096 through dreams. Under observation.",
-                        "specialization": "Mental Health Assessment & Trauma Counseling"
-                    },
+                   
                     "jason": {
                         "name": "Jason",
                         "title": "Technical Specialist",

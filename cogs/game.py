@@ -651,11 +651,6 @@ class Game(commands.Cog):
                     dmg = random.randint(int(user_atk*0.8), int(user_atk*1.2))
                     s_hp -= dmg
                     log.append(f"Turn {turn}: You attack {scp['name']} for {dmg} damage! SCP HP: {max(s_hp,0)}")
-                    # 10% chance weapon gets damaged (only if not already damaged)
-                    if not weapon_damaged and random.random() < 0.10:
-                        weapon_damaged = True
-                        damaged_items.append(equipped_weapon)
-                        log.append(f"⚠️ Your {equipped_weapon} was damaged and can no longer be used until repaired!")
                 else:
                     log.append(f"Turn {turn}:DANGER! You have no usable weapon!")
                 # Pet attacks (if present)

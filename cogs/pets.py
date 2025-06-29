@@ -1,6 +1,6 @@
 from discord.ext import commands, tasks
 import discord
-from discord import app_commands
+from discord import app_commands, ui
 
 # Try to import config, fall back to config_fallback if not available
 try:
@@ -269,38 +269,37 @@ class Pets(commands.Cog):
             await interaction.response.send_message("It's a tie!")
 
     @app_commands.command(name="equippet", description="Equip a pet to show on your profile")
-    @app_commands.describe(pet="The name of the pet to equip")
-    async def equippet(self, interaction: discord.Interaction, pet: str):
-        print(f"[DEBUG] /equippet called by {interaction.user} for pet: {pet}")
-        try:
-            user_data = get_user(interaction.user.id)
-            # Support legacy pets stored as strings
-            owned_pets = user_data.get("pets", [])
-            if pet not in owned_pets:
-                await interaction.response.send_message(f"❌ You do not own '{pet}'.", ephemeral=True)
-                return
-            pet_obj = get_pet_by_name(pet)
-            if not pet_obj:
-                await interaction.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
-                return
-            update_user(interaction.user.id, equipped_pet=pet)
-            color = get_pet_rarity_color(pet_obj['rarity']) if pet_obj else 0x95a5a6
-            embed = discord.Embed(
-                description=f"🐾 Equipped **{pet}** ({pet_obj['rarity']})!",
-                color=color
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            try:
-                await asyncio.sleep(300)
-                await interaction.delete_original_response()
-            except Exception as e:
-                print(f"[ERROR] /equippet delete_original_response: {e}")
-        except Exception as e:
-            print(f"[ERROR] /equippet failed: {e}")
-            try:
-                await interaction.response.send_message("❌ An error occurred while equipping your pet.", ephemeral=True)
-            except Exception:
-                pass
+    async def equippet(self, interaction: discord.Interaction):
+        print(f"[DEBUG] /equippet called by {interaction.user}")
+        user_data = get_user(interaction.user.id)
+        owned_pets = user_data.get("pets", [])
+        if not owned_pets:
+            await interaction.response.send_message("❌ You do not own any pets.", ephemeral=True)
+            return
+        # Build select options
+        options = [discord.SelectOption(label=pet, value=pet) for pet in owned_pets]
+        # Define the select menu
+        class PetSelect(ui.View):
+            def __init__(self):
+                super().__init__(timeout=30)
+                self.value = None
+            @ui.select(placeholder="Choose a pet to equip", min_values=1, max_values=1, options=options)
+            async def select_callback(self, select, interaction2):
+                pet = select.values[0]
+                pet_obj = get_pet_by_name(pet)
+                if not pet_obj:
+                    await interaction2.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
+                    return
+                update_user(interaction.user.id, equipped_pet=pet)
+                color = get_pet_rarity_color(pet_obj['rarity']) if pet_obj else 0x95a5a6
+                embed = discord.Embed(
+                    description=f"🐾 Equipped **{pet}** ({pet_obj['rarity']})!",
+                    color=color
+                )
+                await interaction2.response.send_message(embed=embed, ephemeral=True)
+                self.stop()
+        view = PetSelect()
+        await interaction.response.send_message("Select a pet to equip:", view=view, ephemeral=True)
 
     @app_commands.command(name="unequippet", description="Unequip your current pet")
     async def unequippet(self, interaction: discord.Interaction):
@@ -350,6 +349,28 @@ class Pets(commands.Cog):
                 await interaction.response.send_message("❌ An error occurred while releasing your pet.", ephemeral=True)
             except Exception:
                 pass
+
+    @app_commands.command(name="comparepet", description="Compare the stats of two pets by name")
+    @app_commands.describe(pet1="The name of the first pet", pet2="The name of the second pet")
+    async def comparepet(self, interaction: discord.Interaction, pet1: str, pet2: str):
+        pet_obj1 = get_pet_by_name(pet1)
+        pet_obj2 = get_pet_by_name(pet2)
+        if not pet_obj1 and not pet_obj2:
+            await interaction.response.send_message(f"❌ Neither '{pet1}' nor '{pet2}' were found in the pet list.", ephemeral=True)
+            return
+        if not pet_obj1:
+            await interaction.response.send_message(f"❌ Pet '{pet1}' not found in the pet list.", ephemeral=True)
+            return
+        if not pet_obj2:
+            await interaction.response.send_message(f"❌ Pet '{pet2}' not found in the pet list.", ephemeral=True)
+            return
+        embed = discord.Embed(
+            title=f"Pet Comparison: {pet1} vs {pet2}",
+            color=0x3498db
+        )
+        embed.add_field(name=pet_obj1['name'], value=f"Rarity: {pet_obj1['rarity']}\nHP: {pet_obj1['hp']}\nATK: {pet_obj1['atk']}", inline=True)
+        embed.add_field(name=pet_obj2['name'], value=f"Rarity: {pet_obj2['rarity']}\nHP: {pet_obj2['hp']}\nATK: {pet_obj2['atk']}", inline=True)
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Pets(bot)) 
