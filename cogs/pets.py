@@ -138,7 +138,7 @@ def get_pet_rarity_color(rarity):
 
 class PetSelect(ui.View):
     def __init__(self, user_id, owned_pets):
-        super().__init__(timeout=30)
+        super().__init__(timeout=60)
         self.user_id = user_id
         self.owned_pets = owned_pets
         # Build select options
@@ -152,15 +152,24 @@ class PetSelect(ui.View):
         pet = interaction2.data["values"][0]
         pet_obj = get_pet_by_name(pet)
         if not pet_obj:
-            await interaction2.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
+            try:
+                await interaction2.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
+            except discord.NotFound:
+                await interaction2.followup.send(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
             return
+        
         update_user(self.user_id, equipped_pet=pet)
         color = get_pet_rarity_color(pet_obj['rarity']) if pet_obj else 0x95a5a6
         embed = discord.Embed(
             description=f"🐾 Equipped **{pet}** ({pet_obj['rarity']})!",
             color=color
         )
-        await interaction2.response.send_message(embed=embed, ephemeral=True)
+        
+        try:
+            await interaction2.response.send_message(embed=embed, ephemeral=True)
+        except discord.NotFound:
+            await interaction2.followup.send(embed=embed, ephemeral=True)
+        
         self.stop()
 
 class Pets(commands.Cog):
@@ -295,17 +304,35 @@ class Pets(commands.Cog):
         else:
             await interaction.response.send_message("It's a tie!")
 
-    @app_commands.command(name="equippet", description="Equip a pet to show on your profile")
-    async def equippet(self, interaction: discord.Interaction):
-        print(f"[DEBUG] /equippet called by {interaction.user}")
+    async def equippet_autocomplete(self, interaction: discord.Interaction, current: str):
         user_data = get_user(interaction.user.id)
         owned_pets = user_data.get("pets", [])
-        if not owned_pets:
-            await interaction.response.send_message("❌ You do not own any pets.", ephemeral=True)
+        return [
+            app_commands.Choice(name=pet, value=pet)
+            for pet in owned_pets if current.lower() in pet.lower()
+        ][:25]  # Discord max autocomplete options
+
+    @app_commands.command(name="equippet", description="Equip a pet to show on your profile")
+    @app_commands.describe(pet="The name of the pet to equip")
+    @app_commands.autocomplete(pet=equippet_autocomplete)
+    async def equippet(self, interaction: discord.Interaction, pet: str):
+        print(f"[DEBUG] /equippet called by {interaction.user} for pet: {pet}")
+        user_data = get_user(interaction.user.id)
+        owned_pets = user_data.get("pets", [])
+        if pet not in owned_pets:
+            await interaction.response.send_message(f"❌ You do not own '{pet}'.", ephemeral=True)
             return
-        
-        view = PetSelect(interaction.user.id, owned_pets)
-        await interaction.response.send_message("Select a pet to equip:", view=view, ephemeral=True)
+        pet_obj = get_pet_by_name(pet)
+        if not pet_obj:
+            await interaction.response.send_message(f"❌ Pet '{pet}' not found in the global pet list. Please contact a mod.", ephemeral=True)
+            return
+        update_user(interaction.user.id, equipped_pet=pet)
+        color = get_pet_rarity_color(pet_obj['rarity']) if pet_obj else 0x95a5a6
+        embed = discord.Embed(
+            description=f"🐾 Equipped **{pet}** ({pet_obj['rarity']})!",
+            color=color
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="unequippet", description="Unequip your current pet")
     async def unequippet(self, interaction: discord.Interaction):
