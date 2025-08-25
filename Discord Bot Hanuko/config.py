@@ -1,5 +1,3 @@
-# config.py
-
 BOT_TOKEN = "your_discord_bot_token_here"
 DEFAULT_PREFIX = "!"
 EMBED_COLORS = {
@@ -9,4 +7,13 @@ EMBED_COLORS = {
     "info": 0x3498DB,
     "mod": 0x5865F2
 }
-# Add other constants as needed 
+
+DB_CONFIG = {
+    "dbname": "your_db",
+    "user": "your_user",
+    "password": "your_password",
+    "host": "your_host",
+    "port": 5432,
+    "sslmode": "require"
+}
+# Add other constants as needed
