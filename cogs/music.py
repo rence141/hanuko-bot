@@ -21,49 +21,108 @@ class Music(commands.Cog):
         return self.music_queues.setdefault(guild_id, [])
 
     def get_audio_source(self, url: str):
-        # Updated yt-dlp options for streaming like other Discord bots
-        ydl_opts = {
-            "format": "bestaudio/best",
-            "noplaylist": True,
-            "nocheckcertificate": True,
-            "ignoreerrors": False,
-            "logtostderr": False,
-            "quiet": True,
-            "no_warnings": True,
-            "default_search": "auto",
-            "source_address": "0.0.0.0",
-            "force_ipv4": True,
-            "extract_flat": False,
-            # Add user agent to avoid bot detection
-            "http_headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        # Multiple yt-dlp configurations to try
+        configs = [
+            # Config 1: Standard with user agent
+            {
+                "format": "bestaudio/best",
+                "noplaylist": True,
+                "nocheckcertificate": True,
+                "ignoreerrors": False,
+                "logtostderr": False,
+                "quiet": True,
+                "no_warnings": True,
+                "default_search": "auto",
+                "source_address": "0.0.0.0",
+                "force_ipv4": True,
+                "extract_flat": False,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
+            },
+            # Config 2: More aggressive settings
+            {
+                "format": "bestaudio/best",
+                "noplaylist": True,
+                "nocheckcertificate": True,
+                "ignoreerrors": False,
+                "logtostderr": False,
+                "quiet": True,
+                "no_warnings": True,
+                "default_search": "auto",
+                "source_address": "0.0.0.0",
+                "force_ipv4": True,
+                "extract_flat": False,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "en-us,en;q=0.5",
+                    "Accept-Encoding": "gzip,deflate",
+                    "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
+                    "Connection": "keep-alive",
+                }
+            },
+            # Config 3: Minimal settings
+            {
+                "format": "worstaudio/worst",
+                "noplaylist": True,
+                "nocheckcertificate": True,
+                "ignoreerrors": False,
+                "logtostderr": False,
+                "quiet": True,
+                "no_warnings": True,
+                "default_search": "auto",
+                "source_address": "0.0.0.0",
+                "force_ipv4": True,
+                "extract_flat": False,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                }
             }
-        }
+        ]
         
         ffmpeg_opts = {
             "options": "-vn -b:a 192k -bufsize 3072k"
         }
         
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                if info:
-                    # Use FFmpegPCMAudio for streaming (like other Discord bots)
-                    return discord.FFmpegPCMAudio(info["url"], **ffmpeg_opts), info
-                else:
-                    raise Exception("Could not extract video info")
-        except Exception as e:
-            # If the first attempt fails, try with different options
-            print(f"[DEBUG] First attempt failed: {e}")
-            ydl_opts["format"] = "worstaudio/worst"
+        # Try each configuration
+        for i, ydl_opts in enumerate(configs):
             try:
+                print(f"[DEBUG] Trying config {i+1} for URL: {url}")
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=False)
-                    if info:
+                    if info and info.get("url"):
+                        print(f"[DEBUG] Success with config {i+1}")
                         return discord.FFmpegPCMAudio(info["url"], **ffmpeg_opts), info
-            except Exception as e2:
-                print(f"[DEBUG] Second attempt failed: {e2}")
-                raise Exception(f"Failed to stream video: {str(e2)}")
+                    else:
+                        print(f"[DEBUG] Config {i+1} failed - no valid info")
+            except Exception as e:
+                print(f"[DEBUG] Config {i+1} failed: {e}")
+                continue
+        
+        # If all configs fail, try with a different approach
+        try:
+            print("[DEBUG] Trying alternative approach with direct format selection")
+            ydl_opts = {
+                "format": "251/250/249",  # Opus formats
+                "noplaylist": True,
+                "nocheckcertificate": True,
+                "ignoreerrors": False,
+                "logtostderr": False,
+                "quiet": True,
+                "no_warnings": True,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                if info and info.get("url"):
+                    return discord.FFmpegPCMAudio(info["url"], **ffmpeg_opts), info
+        except Exception as e:
+            print(f"[DEBUG] Alternative approach failed: {e}")
+        
+        raise Exception("All streaming methods failed. YouTube may be blocking this video.")
 
     async def play_next(self, guild_id, channel):
         queue = self.get_queue(guild_id)
@@ -144,19 +203,24 @@ class Music(commands.Cog):
                 if "Sign in to confirm you're not a bot" in error_msg:
                     await interaction.followup.send(
                         "❌ **YouTube Bot Detection Error**\n"
-                        "YouTube is blocking this video due to bot detection. "
-                        "Try a different video or check if the URL is valid.\n\n"
-                        "**Alternative:** Try using a different YouTube video URL.",
+                        "This video is blocked by YouTube's bot detection.\n\n"
+                        "**Try these solutions:**\n"
+                        "• Use a different YouTube video\n"
+                        "• Try popular/trending videos\n"
+                        "• Avoid age-restricted content\n"
+                        "• Use shorter videos\n\n"
+                        "**Note:** This is a YouTube limitation, not a bot issue.",
                         ephemeral=True
                     )
                 else:
                     await interaction.followup.send(
                         f"❌ **Streaming Error**\n"
-                        f"Could not stream the video: {error_msg}\n\n"
-                        f"**Possible solutions:**\n"
-                        f"• Check if the URL is valid\n"
-                        f"• Try a different video\n"
-                        f"• Make sure the video is not age-restricted",
+                        f"Could not stream the video.\n\n"
+                        f"**Error:** {error_msg}\n\n"
+                        f"**Try:**\n"
+                        "• Different video URL\n"
+                        "• Popular videos\n"
+                        "• Check if URL is valid",
                         ephemeral=True
                     )
                 return
