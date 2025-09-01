@@ -28,6 +28,8 @@ initial_extensions = [
     "cogs.teams", 
     "cogs.misc",
     "cogs.roles"
+    "cogs.music",
+    "cogs.recommendation",
 ]
 
 class HanukoBot(commands.Bot):
