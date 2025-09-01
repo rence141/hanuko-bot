@@ -48,8 +48,9 @@ class Music(commands.Cog):
             await channel.send(embed=embed)
             await vc.disconnect()
 
-    # --- Slash Commands ---
+    # --- Guild-Specific Slash Commands ---
     @app_commands.command(name="play", description="Play a YouTube song (adds to queue)")
+    @app_commands.guild_only()
     async def play(self, interaction: discord.Interaction, url: str):
         if not interaction.user.voice:
             await interaction.response.send_message("❌ You must be in a voice channel!", ephemeral=True)
@@ -77,6 +78,7 @@ class Music(commands.Cog):
             await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="queue", description="Show current music queue")
+    @app_commands.guild_only()
     async def show_queue(self, interaction: discord.Interaction):
         queue = self.get_queue(interaction.guild.id)
         if not queue:
@@ -87,6 +89,7 @@ class Music(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="skip", description="Skip the current song")
+    @app_commands.guild_only()
     async def skip(self, interaction: discord.Interaction):
         vc = interaction.guild.voice_client
         if vc and vc.is_playing():
@@ -96,6 +99,7 @@ class Music(commands.Cog):
             await interaction.response.send_message("Nothing is playing right now.", ephemeral=True)
 
     @app_commands.command(name="stop", description="Stop music and clear queue")
+    @app_commands.guild_only()
     async def stop(self, interaction: discord.Interaction):
         vc = interaction.guild.voice_client
         if vc:
@@ -106,6 +110,7 @@ class Music(commands.Cog):
             await interaction.response.send_message("I'm not in a voice channel.", ephemeral=True)
 
     @app_commands.command(name="leave", description="Disconnect from voice channel")
+    @app_commands.guild_only()
     async def leave(self, interaction: discord.Interaction):
         vc = interaction.guild.voice_client
         if vc:
@@ -114,14 +119,6 @@ class Music(commands.Cog):
             await interaction.response.send_message("Disconnected and cleared queue.", ephemeral=True)
         else:
             await interaction.response.send_message("I'm not in a voice channel.", ephemeral=True)
-
-    # --- Register commands instantly for test guild ---
-    @commands.Cog.listener()
-    async def on_ready(self):
-        guild = discord.Object(id=TEST_GUILD_ID)
-        self.bot.tree.copy_global_to(guild=guild)
-        await self.bot.tree.sync(guild=guild)
-        print("[DEBUG] Music commands synced to test guild")
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
