@@ -23,11 +23,18 @@ initial_extensions = [
     "cogs.roles"
 ]
 
+# Remove deprecated or missing cogs defensively
+if "cogs.music" in initial_extensions:
+    initial_extensions.remove("cogs.music")
+
 class HanukoBot(commands.Bot):
     async def setup_hook(self):
         # Load cogs
         for ext in initial_extensions:
-            await self.load_extension(ext)
+            try:
+                await self.load_extension(ext)
+            except Exception as e:
+                print(f"[WARNING] Failed to load extension '{ext}': {e}")
         # Sync slash commands
         try:
             synced = await self.tree.sync()
