@@ -20,5 +20,6 @@ DB_CONFIG = {
     'user': os.getenv('DB_USER', 'postgres'),
     'password': os.getenv('DB_PASSWORD', ''),
     'database': os.getenv('DB_NAME', 'hanuko_bot'),
-    'port': os.getenv('DB_PORT', '5432')
-} 
+    'port': os.getenv('DB_PORT', '5432'),
+    "sslmode": "require"
+}
