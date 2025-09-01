@@ -29,13 +29,8 @@ class Recommendation(commands.Cog):
         channel: discord.TextChannel
     ):
         """Send the recommendation with playable video embed."""
-        # Send the URL in message content for Discord auto-embed (playable preview)
-        message_content = f"🎵 **Recommended by {interaction.user.mention}**\n{url}"
-        
-        await channel.send(
-            message_content,
-            allowed_mentions=discord.AllowedMentions.none()
-        )
+        # Send just the URL for clean auto-embed (playable preview)
+        await channel.send(url)
         
         # Respond to user
         await interaction.response.send_message(
