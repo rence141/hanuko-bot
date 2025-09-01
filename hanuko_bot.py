@@ -34,6 +34,15 @@ initial_extensions = [
 
 class HanukoBot(commands.Bot):
     async def setup_hook(self):
+        # Setup database tables
+        print("[DEBUG] Setting up database...")
+        try:
+            from setup_database import create_tables
+            create_tables()
+            print("[DEBUG] Database setup complete!")
+        except Exception as e:
+            print(f"[ERROR] Database setup failed: {e}")
+        
         # Load cogs
         for ext in initial_extensions:
             await self.load_extension(ext)
