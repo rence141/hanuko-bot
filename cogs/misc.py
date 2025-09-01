@@ -501,7 +501,6 @@ class Misc(commands.Cog):
             "scp914", "scp294", "scp963", "scp999", "recontainscp", "easyrecontain",
             "containmentsuit", "claimvault",
             "afk", "return", "afklist",
-            "play", "queue", "skip", "stop", "leave",
             "poll", "vote", "pollresults", "endpoll", "listpolls",
             "ping", "botdetails", "serverinfo", "textme", "recommend"
         ]
