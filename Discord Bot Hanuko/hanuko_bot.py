@@ -20,7 +20,8 @@ initial_extensions = [
     "cogs.pets",
     "cogs.teams", 
     "cogs.misc",
-    "cogs.roles"
+    "cogs.roles",
+    "cogs.recommendation"
 ]
 
 # Remove deprecated or missing cogs defensively
