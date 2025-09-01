@@ -394,39 +394,101 @@ class Misc(commands.Cog):
     @slowmode.__func__()
     async def commands(self, interaction: discord.Interaction):
         commands_list = [
+            # Game & Profile
             ("/profile", "Show your profile."),
             ("/mission", "Complete a mission for XP."),
             ("/daily", "Claim your daily reward."),
             ("/weekly", "Claim your weekly reward."),
-            ("/leaderboard", "Show the top 10 users by credits."),
+            ("/leaderboard", "Show the top 10 users by level."),
+            ("/gleaderboard", "Show global top 10 users across all servers."),
+            ("/quest", "View and claim your daily, weekly, and monthly quest rewards."),
+            
+            # Economy & Shop
             ("/shop", "View the SCP shop."),
             ("/buy", "Buy an item from the shop."),
             ("/inventory", "View your inventory."),
+            ("/checkcredits", "Check your or another user's credits."),
+            ("/equipgun", "Equip a gun from your inventory."),
+            ("/equipgear", "Equip a gear item from your inventory."),
+            ("/upgrade", "Upgrade an item in your inventory."),
+            ("/removeitem", "Remove an item from your inventory."),
+            ("/gunsmith", "Repair a damaged weapon for 10% of its shop price."),
+            ("/checkgun", "Check the condition of a gun you own."),
+            ("/inventoryvalue", "Check the total value of your inventory."),
+            
+            # Marketplace & Trading
+            ("/marketplace_list", "List an item for sale on the marketplace."),
+            ("/marketplace_browse", "Browse all items for sale on the marketplace."),
+            ("/marketplace_buy", "Buy an item from the marketplace."),
+            ("/marketplace_retrieve", "Retrieve your item from the marketplace."),
+            ("/trade", "Propose a trade to another user."),
+            ("/confirmtrade", "Confirm and execute a pending trade."),
+            ("/canceltrade", "Cancel a pending trade you initiated."),
+            
+            # Pets
+            ("/adoptpet", "Adopt a random pet (gacha)."),
+            ("/adoptpet10x", "Adopt 10 random pets at once (5% discount)."),
+            ("/premiumpets", "Adopt a premium pet (gacha)."),
+            ("/premiumpets10x", "Adopt 10 premium pets at once (5% discount)."),
+            ("/pets", "View your adopted pets."),
+            ("/equippet", "Equip up to 2 pets to show on your profile."),
+            ("/unequippet", "Unequip a pet from your equipped slots."),
+            ("/equippedpets", "View and manage your equipped pets (up to 2 slots)."),
+            ("/petbattle", "Battle your pet against another user's equipped pet."),
+            ("/petbattleteam", "Set up your pet battle team (up to 3 pets)."),
+            ("/trainpet", "Train one of your pets (1h cooldown)."),
+            ("/releasepet", "Release a pet you own."),
+            ("/comparepet", "Compare the stats of two pets by name."),
+            
+            # Teams
+            ("/createteam", "Create a new team."),
+            ("/inviteteam", "Invite a user to your team."),
+            ("/jointeam", "Join an existing team by name (if invited)."),
+            ("/team", "View your current team info."),
+            ("/promote", "Promote a team member to Officer or Deputy."),
+            ("/demote", "Demote a team member to Member."),
+            
+            # Roles
             ("/setrole", "Assign yourself a custom role from the allowed list."),
             ("/listcustomroles", "List all assignable custom roles for this server."),
-            ("/petbattle", "Battle your pet against another user's equipped pet. Usage: /petbattle mypet:<your pet> opponent:@User"),
-            ("/adoptpet", "Adopt a random pet (gacha). Usage: /adoptpet"),
-            ("/adoptpet10x", "Adopt 10 random pets at once with 5% discount (2,375 credits instead of 2,500). Usage: /adoptpet10x"),
-            ("/premiumpets", "Adopt a premium pet (gacha). Usage: /premiumpets"),
-            ("/premiumpets10x", "Adopt 10 premium pets at once with 5% discount (9,500 credits instead of 10,000). Usage: /premiumpets10x"),
-            ("/quest", "View and claim your daily, weekly, and monthly quest rewards."),
-            ("/marketplace list", "List an item for sale on the marketplace."),
-            ("/marketplace browse", "Browse all items for sale on the marketplace."),
-            ("/marketplace buy", "Buy an item from the marketplace."),
-            ("/trade", "Propose a trade to another user."),
-            ("/checkcredits", "Check your or another user's credits."),
-            ("/bal", "Alias for /checkcredits."),
-            ("/inv", "Alias for /inventory."),
-            ("/lb", "Alias for /leaderboard."),
+            
+            # Gambling & Fun
+            ("/scp914", "Gamble your credits in SCP-914! Choose a setting for different odds."),
+            ("/scp294", "Order a mystery drink from SCP-294 for a random outcome!"),
+            ("/scp963", "Flip Dr. Bright's Coin of Fate!"),
+            ("/scp999", "Hug SCP-999 for a chance at a lucky reward!"),
+            ("/recontainscp", "Battle an SCP in a containment event!"),
+            ("/easyrecontain", "Complete 5 easy SCP containment tasks (no weapon required)."),
+            
+            # Events
+            ("/containmentsuit", "Respond to an active SCP-008 breach event."),
+            ("/claimvault", "Claim the currently airdropped vault if you have the right keycard!"),
+            
+            # AFK System
             ("/afk", "Set your AFK status with a custom message."),
             ("/return", "Manually return from AFK status."),
             ("/afklist", "Show all currently AFK users."),
-            ("/serverinfo", "Show detailed information about this server."),
+            
+            # Music (Guild-specific)
+            ("/play", "Play a YouTube song (adds to queue)."),
+            ("/queue", "Show current music queue."),
+            ("/skip", "Skip the current song."),
+            ("/stop", "Stop music and clear queue."),
+            ("/leave", "Disconnect from voice channel."),
+            
+            # Polls
             ("/poll", "Create a poll with multiple options."),
             ("/vote", "Vote on a poll."),
             ("/pollresults", "View poll results."),
             ("/endpoll", "End a poll early (creator only)."),
-            ("/listpolls", "List active polls in this channel."),
+            ("/listpolls", "List active polls in this server."),
+            
+            # Utility
+            ("/ping", "Check if the bot is alive."),
+            ("/botdetails", "Show information about the bot and its creator."),
+            ("/serverinfo", "Show detailed information about this server."),
+            ("/textme", "Send a custom message as an embed."),
+            ("/recommend", "Recommend a song in a text channel."),
         ]
         embed = discord.Embed(title="📖 All Commands", color=discord.Color.blurple())
         for name, desc in commands_list:
@@ -436,7 +498,18 @@ class Misc(commands.Cog):
     async def help_command_autocomplete(self, interaction: discord.Interaction, current: str):
         # List of all available commands for autocomplete
         command_names = [
-            "profile", "mission", "daily", "weekly", "leaderboard", "shop", "buy", "inventory", "inv", "setrole", "listcustomroles", "petbattle", "adoptpet", "premiumpets", "quest", "marketplace list", "marketplace browse", "marketplace buy", "trade", "checkcredits", "bal", "lb", "afk", "return", "afklist", "serverinfo", "poll", "vote", "pollresults", "endpoll", "listpolls", "equipgun", "equippet", "unequippet", "comparepet", "gleaderboard"
+            "profile", "mission", "daily", "weekly", "leaderboard", "gleaderboard", "quest",
+            "shop", "buy", "inventory", "checkcredits", "equipgun", "equipgear", "upgrade", "removeitem", "gunsmith", "checkgun", "inventoryvalue",
+            "marketplace_list", "marketplace_browse", "marketplace_buy", "marketplace_retrieve", "trade", "confirmtrade", "canceltrade",
+            "adoptpet", "adoptpet10x", "premiumpets", "premiumpets10x", "pets", "equippet", "unequippet", "equippedpets", "petbattle", "petbattleteam", "trainpet", "releasepet", "comparepet",
+            "createteam", "inviteteam", "jointeam", "team", "promote", "demote",
+            "setrole", "listcustomroles",
+            "scp914", "scp294", "scp963", "scp999", "recontainscp", "easyrecontain",
+            "containmentsuit", "claimvault",
+            "afk", "return", "afklist",
+            "play", "queue", "skip", "stop", "leave",
+            "poll", "vote", "pollresults", "endpoll", "listpolls",
+            "ping", "botdetails", "serverinfo", "textme", "recommend"
         ]
         return [
             app_commands.Choice(name=cmd, value=cmd)
@@ -454,24 +527,30 @@ class Misc(commands.Cog):
                 description="Here are the main commands you can use, organized by category:",
                 color=discord.Color.blurple()
             )
-            # General
-            embed.add_field(name="__General__", value="/profile\n/mission\n/daily, /weekly\n/leaderboard, /lb\n/checkcredits, /bal\n/afk, /return, /afklist\n/serverinfo", inline=False)
+            # Game & Profile
+            embed.add_field(name="__Game & Profile__", value="/profile\n/mission\n/daily, /weekly\n/leaderboard, /gleaderboard\n/quest", inline=False)
             # Economy & Shop
-            embed.add_field(name="__Economy & Shop__", value="/shop, /buy\n/inventory, /inv\n/equipgun", inline=False)
-            # Pets
-            embed.add_field(name="__Pets__", value="/adoptpet, /adoptpet10x\n/premiumpets, /premiumpets10x\n/petbattle (1v1, pick your pet vs opponent's equipped pet)\n/petbattleteam (set your default battle team)\n/equippet, /unequippet, /equippedpets\n/trainpet, /releasepet, /pets", inline=False)
-            # Roles & Teams
-            embed.add_field(name="__Roles & Teams__", value="/setrole, /listcustomroles\n/team, /jointeam, /leaveteam, /inviteteam", inline=False)
+            embed.add_field(name="__Economy & Shop__", value="/shop, /buy\n/inventory\n/checkcredits\n/equipgun, /equipgear\n/upgrade, /removeitem\n/gunsmith, /checkgun\n/inventoryvalue", inline=False)
             # Marketplace & Trading
-            embed.add_field(name="__Marketplace & Trading__", value="/marketplace_list, /marketplace_browse, /marketplace_buy, /marketplace_retrieve\n/trade, /confirmtrade, /canceltrade", inline=False)
+            embed.add_field(name="__Marketplace & Trading__", value="/marketplace_list, /marketplace_browse\n/marketplace_buy, /marketplace_retrieve\n/trade, /confirmtrade, /canceltrade", inline=False)
+            # Pets
+            embed.add_field(name="__Pets__", value="/adoptpet, /adoptpet10x\n/premiumpets, /premiumpets10x\n/pets, /equippet, /unequippet, /equippedpets\n/petbattle, /petbattleteam\n/trainpet, /releasepet, /comparepet", inline=False)
+            # Teams
+            embed.add_field(name="__Teams__", value="/createteam, /inviteteam, /jointeam\n/team, /promote, /demote", inline=False)
+            # Roles
+            embed.add_field(name="__Roles__", value="/setrole, /listcustomroles", inline=False)
             # Gambling & Fun
-            embed.add_field(name="__Gambling & Fun__", value="/scp914, /scp294, /scp963, /scp999", inline=False)
-            # Quests & Events
-            embed.add_field(name="__Quests & Events__", value="/quest\n/recontainscp\n/containmentsuit", inline=False)
-            # Vault Event
-            embed.add_field(name="__Vault Event__", value="/claimvault (claim airdropped vaults if you have the right keycard)", inline=False)
+            embed.add_field(name="__Gambling & Fun__", value="/scp914, /scp294, /scp963, /scp999\n/recontainscp, /easyrecontain", inline=False)
+            # Events
+            embed.add_field(name="__Events__", value="/containmentsuit\n/claimvault", inline=False)
+            # AFK System
+            embed.add_field(name="__AFK System__", value="/afk, /return, /afklist", inline=False)
+            # Music
+            embed.add_field(name="__Music__", value="/play, /queue, /skip, /stop, /leave", inline=False)
             # Polls
-            embed.add_field(name="__Polls__", value="/poll, /vote, /pollresults, /endpoll, /listpolls", inline=False)
+            embed.add_field(name="__Polls__", value="/poll, /vote, /pollresults\n/endpoll, /listpolls", inline=False)
+            # Utility
+            embed.add_field(name="__Utility__", value="/ping, /botdetails, /serverinfo\n/textme, /recommend", inline=False)
             embed.add_field(name="⏳ Slowmode Notice", value="Most commands have a 5 second cooldown per user. If you use commands too quickly, you'll see a slow down warning!", inline=False)
             embed.set_footer(text="For more info, ask the developer or use /modhelp if you are a mod.")
             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -479,69 +558,108 @@ class Misc(commands.Cog):
         # Command-specific help
         command = command.lower()
         help_texts = {
-            "profile": "Show your profile, including level, XP, credits, equipped pet, inventory, and more.",
+            # Game & Profile
+            "profile": "Show your profile, including level, XP, credits, equipped pet, inventory, and more. Usage: /profile [user:@User]",
             "mission": "Complete a mission for XP. Usage: /mission",
             "daily": "Claim your daily reward. Usage: /daily",
             "weekly": "Claim your weekly reward. Usage: /weekly",
-            "leaderboard": "Show the top 10 users by credits. Usage: /leaderboard",
+            "leaderboard": "Show the top 10 users by level. Usage: /leaderboard",
+            "gleaderboard": "Show global top 10 users across all servers. Usage: /gleaderboard",
+            "quest": "View and claim your daily, weekly, and monthly quest rewards. Usage: /quest",
+            
+            # Economy & Shop
             "shop": "View the SCP shop. Usage: /shop",
             "buy": "Buy an item from the shop. Usage: /buy item:<item name>",
             "inventory": "View your inventory. Usage: /inventory",
-            "inv": "Alias for /inventory.",
+            "checkcredits": "Check your or another user's credits. Usage: /checkcredits [user:@User]",
+            "equipgun": "Equip a gun from your inventory. Usage: /equipgun gun:<gun name>",
+            "equipgear": "Equip a gear item from your inventory. Usage: /equipgear gear:<gear name>",
+            "upgrade": "Upgrade an item in your inventory. Usage: /upgrade item:<item name>",
+            "removeitem": "Remove an item from your inventory. Usage: /removeitem item:<item name>",
+            "gunsmith": "Repair a damaged weapon for 10% of its shop price. Usage: /gunsmith weapon:<weapon name>",
+            "checkgun": "Check the condition of a gun you own. Usage: /checkgun gun:<gun name>",
+            "inventoryvalue": "Check the total value of your inventory. Usage: /inventoryvalue",
+            
+            # Marketplace & Trading
+            "marketplace_list": "List an item for sale on the marketplace. Usage: /marketplace_list item:<item> price:<amount>",
+            "marketplace_browse": "Browse all items for sale on the marketplace. Usage: /marketplace_browse",
+            "marketplace_buy": "Buy an item from the marketplace. Usage: /marketplace_buy listing_id:<id>",
+            "marketplace_retrieve": "Retrieve your item from the marketplace. Usage: /marketplace_retrieve listing_id:<id>",
+            "trade": "Propose a trade to another user. Usage: /trade user:@User offer_item:ItemName [offer_pet:PetName] [request_item:ItemName] [request_pet:PetName] [request_credits:Amount]",
+            "confirmtrade": "Confirm and execute a pending trade. Usage: /confirmtrade trade_id:<id>",
+            "canceltrade": "Cancel a pending trade you initiated. Usage: /canceltrade trade_id:<id>",
+            
+            # Pets
+            "adoptpet": "Adopt a random pet (gacha). Usage: /adoptpet",
+            "adoptpet10x": "Adopt 10 random pets at once with 5% discount. Usage: /adoptpet10x",
+            "premiumpets": "Adopt a premium pet (gacha). Usage: /premiumpets",
+            "premiumpets10x": "Adopt 10 premium pets at once with 5% discount. Usage: /premiumpets10x",
+            "pets": "View your adopted pets. Usage: /pets",
+            "equippet": "Equip up to 2 pets to show on your profile. Usage: /equippet pet:<pet name>",
+            "unequippet": "Unequip a pet from your equipped slots. Usage: /unequippet pet:<pet name>",
+            "equippedpets": "View and manage your equipped pets (up to 2 slots). Usage: /equippedpets",
+            "petbattle": "Battle your pet against another user's equipped pet. Usage: /petbattle mypet:<your pet> opponent:@User",
+            "petbattleteam": "Set up your pet battle team (up to 3 pets). Usage: /petbattleteam",
+            "trainpet": "Train one of your pets (1h cooldown). Usage: /trainpet pet:<pet name>",
+            "releasepet": "Release a pet you own. Usage: /releasepet pet:<pet name>",
+            "comparepet": "Compare the stats of two pets by name. Usage: /comparepet pet1:<name> pet2:<name>",
+            
+            # Teams
+            "createteam": "Create a new team. Usage: /createteam name:<team name>",
+            "inviteteam": "Invite a user to your team. Usage: /inviteteam user:@User",
+            "jointeam": "Join an existing team by name (if invited). Usage: /jointeam team:<team name>",
+            "team": "View your current team info. Usage: /team",
+            "promote": "Promote a team member to Officer or Deputy. Usage: /promote user:@User role:<officer|deputy>",
+            "demote": "Demote a team member to Member. Usage: /demote user:@User",
+            
+            # Roles
             "setrole": "Assign yourself a custom role from the allowed list. Usage: /setrole role_name:<role>",
             "listcustomroles": "List all assignable custom roles for this server. Usage: /listcustomroles",
-            "petbattle": "Battle your pet against another user's equipped pet. Usage: /petbattle mypet:<your pet> opponent:@User",
-            "petbattleteam": "Set up your default pet battle team (for future features). Usage: /petbattleteam",
-            "equippedpets": "View and manage your equipped pets (up to 2 slots). Usage: /equippedpets",
-            "adoptpet": "Adopt a random pet (gacha). Usage: /adoptpet",
-            "adoptpet10x": "Adopt 10 random pets at once with 5% discount (2,375 credits instead of 2,500). Usage: /adoptpet10x",
-            "premiumpets": "Adopt a premium pet (gacha). Usage: /premiumpets",
-            "premiumpets10x": "Adopt 10 premium pets at once with 5% discount (9,500 credits instead of 10,000). Usage: /premiumpets10x",
-            "quest": "View and claim your daily, weekly, and monthly quest rewards. Usage: /quest",
-            "marketplace list": "List an item for sale on the marketplace. Usage: /marketplace_list item:<item> price:<amount>",
-            "marketplace browse": "Browse all items for sale on the marketplace. Usage: /marketplace_browse",
-            "marketplace buy": "Buy an item from the marketplace. Usage: /marketplace_buy listing_id:<id>",
-            "trade": "Propose a trade to another user. Usage: /trade user:@User offer_item:ItemName [offer_pet:PetName] [request_item:ItemName] [request_pet:PetName] [request_credits:Amount]",
-            "checkcredits": "Check your or another user's credits. Usage: /checkcredits [user:@User]",
-            "bal": "Alias for /checkcredits.",
-            "lb": "Alias for /leaderboard.",
-            "afk": "Set your AFK status with a custom message. You'll be automatically removed from AFK when you send a message. Usage: /afk [message]",
-            "return": "Manually return from AFK status. Usage: /return",
-            "afklist": "Show all currently AFK users. Usage: /afklist",
-            "serverinfo": "Show detailed information about this server including member count, channels, roles, and more. Usage: /serverinfo",
-            "poll": "Create a poll with multiple options. Usage: /poll question:<question> options:<option1,option2,...> [duration:<time>]",
-            "vote": "Vote on a poll. Usage: /vote poll_id:<id> option_number:<1-10>",
-            "pollresults": "View poll results. Usage: /pollresults poll_id:<id>",
-            "endpoll": "End a poll early (creator only). Usage: /endpoll poll_id:<id>",
-            "listpolls": "List active polls in this channel. Usage: /listpolls",
+            
+            # Gambling & Fun
             "scp914": "Gamble your credits in SCP-914! Choose a setting for different odds. Usage: /scp914 bet:<amount> setting:<rough|coarse|1:1|fine|very fine>",
             "scp294": "Order a mystery drink from SCP-294 for a random outcome! Usage: /scp294 bet:<amount>",
             "scp963": "Flip Dr. Bright's Coin of Fate! Usage: /scp963 bet:<amount> side:<heads|tails>",
             "scp999": "Hug SCP-999 for a chance at a lucky reward! Usage: /scp999 bet:<amount>",
-            "containmentsuit": "Use this during an active SCP-008 breach event to protect yourself (if you have a Containment Suit).",
-            "enable008": "(Admin) Enable SCP-008 breach events for your server. Usage: /enable008 channel:#channel",
-            "disable008": "(Admin) Disable SCP-008 breach events for your server.",
-            "enablevault": "(Admin) Enable Vault Airdrop events for your server. Usage: /enablevault channel:#channel",
+            "recontainscp": "Battle an SCP in a containment event! Usage: /recontainscp",
+            "easyrecontain": "Complete 5 easy SCP containment tasks (no weapon required). Usage: /easyrecontain",
+            
+            # Events
+            "containmentsuit": "Use this during an active SCP-008 breach event to protect yourself (if you have a Containment Suit). Usage: /containmentsuit",
             "claimvault": "Claim the currently airdropped vault if you have the right keycard. Usage: /claimvault",
+            
+            # AFK System
+            "afk": "Set your AFK status with a custom message. You'll be automatically removed from AFK when you send a message. Usage: /afk [message]",
+            "return": "Manually return from AFK status. Usage: /return",
+            "afklist": "Show all currently AFK users. Usage: /afklist",
+            
+            # Music
+            "play": "Play a YouTube song (adds to queue). Usage: /play url:<youtube_url>",
+            "queue": "Show current music queue. Usage: /queue",
+            "skip": "Skip the current song. Usage: /skip",
+            "stop": "Stop music and clear queue. Usage: /stop",
+            "leave": "Disconnect from voice channel. Usage: /leave",
+            
+            # Polls
+            "poll": "Create a poll with multiple options. Usage: /poll question:<question> options:<option1,option2,...> [duration:<time>]",
+            "vote": "Vote on a poll. Usage: /vote poll_id:<id> option_number:<1-10>",
+            "pollresults": "View poll results. Usage: /pollresults poll_id:<id>",
+            "endpoll": "End a poll early (creator only). Usage: /endpoll poll_id:<id>",
+            "listpolls": "List active polls in this server. Usage: /listpolls",
+            
+            # Utility
+            "ping": "Check if the bot is alive. Usage: /ping",
+            "botdetails": "Show information about the bot and its creator. Usage: /botdetails",
+            "serverinfo": "Show detailed information about this server. Usage: /serverinfo",
+            "textme": "Send a custom message as an embed. Usage: /textme text:<message>",
+            "recommend": "Recommend a song in a text channel. Usage: /recommend song:<song name>",
         }
         desc = help_texts.get(command, "Command not found. Use /commands to see all commands.")
         embed = discord.Embed(title=f"Help: /{command}", description=desc, color=discord.Color.blurple())
         embed.add_field(name="⏳ Slowmode Notice", value="Most commands have a 5 second cooldown per user. If you use commands too quickly, you'll see a slow down warning!", inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="inv", description="Alias for /inventory")
-    @slowmode.__func__()
-    async def inv(self, interaction: discord.Interaction):
-        user_data = get_user(interaction.user.id)
-        embed = discord.Embed(
-            title=f"\U0001f392 Inventory: {interaction.user.display_name}",
-            color=config.EMBED_COLORS["info"]
-        )
-        if user_data["inventory"]:
-            embed.add_field(name="Items", value=", ".join(user_data["inventory"]), inline=False)
-        else:
-            embed.add_field(name="Items", value="No items yet. Use /shop and /buy!", inline=False)
-        await interaction.response.send_message(embed=embed)
+    # Removed /inv shortcut to reduce command count
 
     @app_commands.command(name="modhelp", description="Show help for moderator commands or a specific mod command")
     @app_commands.describe(command="(Optional) The mod command to get detailed help for")

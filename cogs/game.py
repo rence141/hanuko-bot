@@ -279,11 +279,7 @@ class Game(commands.Cog):
             except Exception as inner_e:
                 print(f"[ERROR] Failed to send error message: {inner_e}")
 
-    @app_commands.command(name="pro", description="Shortcut for /profile - Show a user's profile")
-    @app_commands.describe(user="The user to view (leave blank for yourself)")
-    async def pro(self, interaction: discord.Interaction, user: discord.Member = None):
-        """Alias for profile command"""
-        await self.profile(interaction, user)
+    # Removed /pro shortcut to reduce command count
 
     @app_commands.command(name="mission", description="Complete a mission for XP")
     async def mission(self, interaction: discord.Interaction):
@@ -1222,16 +1218,7 @@ class Game(commands.Cog):
                 ephemeral=True
             )
 
-    @app_commands.command(name="bal", description="Shortcut for /checkcredits - Check your credits")
-    @app_commands.describe(user="The user to check (leave blank for yourself)", public="Show the result publicly (default: private)")
-    async def bal(self, interaction: discord.Interaction, user: discord.Member = None, public: bool = False):
-        """Alias for checkcredits command"""
-        await self.checkcredits(interaction, user, public)
-
-    @app_commands.command(name="lb", description="Shortcut for /leaderboard - Show the top 10 users")
-    async def lb(self, interaction: discord.Interaction):
-        """Alias for leaderboard command"""
-        await self.leaderboard(interaction)
+    # Removed /bal and /lb shortcuts to reduce command count
 
     @app_commands.command(name="equipgear", description="Equip a gear item from your inventory.")
     @app_commands.describe(gear="The name of the gear to equip")
