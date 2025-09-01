@@ -39,7 +39,6 @@ class Recommendation(commands.Cog):
         
         # Send embed and URL separately for clean video embed
         await channel.send(embed=embed)
-        await channel.send(url)
         
         # Respond to user
         await interaction.response.send_message(
