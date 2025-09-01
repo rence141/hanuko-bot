@@ -18,6 +18,7 @@ class Recommendation(commands.Cog):
         name="recommend",
         description="Recommend a song in a text channel"
     )
+    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.describe(
         url="The YouTube/Spotify/etc. link you want to recommend",
         channel="The channel where the recommendation will appear"
