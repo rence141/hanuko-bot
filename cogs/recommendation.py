@@ -1,3 +1,19 @@
+# recommendation.py
+from discord.ext import commands
+import discord
+from discord import app_commands
+
+# Try to import config, fall back to config_fallback if not available
+try:
+    import config
+except ImportError:
+    import config_fallback as config
+
+class Recommendation(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        print("[DEBUG] Recommendation cog initialized")
+
 @app_commands.command(
     name="recommend",
     description="Recommend a song in a text channel"
@@ -35,23 +51,14 @@ async def recommend(
         )
         return
 
-    if not perms.embed_links:
-        await interaction.response.send_message(
-            f"⚠️ I can't send embeds in {channel.mention}. Please grant **Embed Links** permission.",
-            ephemeral=True,
-        )
-        return
-
-    # Create embed instead of sending raw link
-    embed = discord.Embed(
-        title="🎵 New Recommendation!",
-        description=f"[Click to listen]({url})",
-        color=discord.Color.blue()
-    )
-    embed.set_footer(text=f"Recommended by {interaction.user.display_name}")
+    # Send the URL in message content so Discord auto-embeds it as playable
+    message_content = f"🎵 Recommended by {interaction.user.mention}\n{url}"
 
     try:
-        await channel.send(embed=embed)
+        await channel.send(
+            message_content,
+            allowed_mentions=discord.AllowedMentions.none()
+        )
     except discord.Forbidden:
         await interaction.response.send_message(
             f"❌ Missing access to post in {channel.mention}. Please grant 'View Channel' and 'Send Messages' to my role.",
