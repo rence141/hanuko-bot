@@ -469,7 +469,7 @@ class Misc(commands.Cog):
             ("/return", "Manually return from AFK status."),
             ("/afklist", "Show all currently AFK users."),
             
-            # Music (Guild-specific)
+            # Music
             ("/play", "Play a YouTube song (adds to queue)."),
             ("/queue", "Show current music queue."),
             ("/skip", "Skip the current song."),
