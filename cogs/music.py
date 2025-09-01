@@ -1,22 +1,24 @@
 # music.py
-from discord.ext import commands, tasks
+from discord.ext import commands
 import discord
 from discord import app_commands
+import yt_dlp
+import asyncio
 
-# Try to import config, fall back to config_fallback if not available
+# Try to import config, fallback if not available
 try:
     import config
 except ImportError:
     import config_fallback as config
 
-    
-import yt_dlp
-import asyncio
+# Replace with your test server (guild) ID
+TEST_GUILD_ID = 123456789012345678  # <- put your server ID here
 
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.music_queues = {}  # {guild_id: [ (url, title, source) ]}
+        self.music_queues = {}  # {guild_id: [(url, title, source)]}
+        print("[DEBUG] Music cog initialized")
 
     def get_queue(self, guild_id):
         return self.music_queues.setdefault(guild_id, [])
@@ -24,7 +26,6 @@ class Music(commands.Cog):
     def get_audio_source(self, url: str):
         ydl_opts = {"format": "bestaudio"}
         ffmpeg_opts = {"options": "-vn"}
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             return discord.FFmpegPCMAudio(info["url"], **ffmpeg_opts), info
@@ -34,7 +35,12 @@ class Music(commands.Cog):
         vc = channel.guild.voice_client
         if queue:
             url, title, source = queue.pop(0)
-            vc.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next(guild_id, channel), self.bot.loop))
+            vc.play(
+                source,
+                after=lambda e: asyncio.run_coroutine_threadsafe(
+                    self.play_next(guild_id, channel), self.bot.loop
+                )
+            )
             embed = discord.Embed(title="🎶 Now Playing", description=f"**{title}**", color=discord.Color.green())
             await channel.send(embed=embed)
         else:
@@ -43,15 +49,11 @@ class Music(commands.Cog):
             await vc.disconnect()
 
     # --- Slash Commands ---
-
     @app_commands.command(name="play", description="Play a YouTube song (adds to queue)")
     async def play(self, interaction: discord.Interaction, url: str):
         if not interaction.user.voice:
-            await interaction.response.send_message(embed=discord.Embed(
-                description="❌ You must be in a voice channel!", color=discord.Color.red()
-            ), ephemeral=True)
+            await interaction.response.send_message("❌ You must be in a voice channel!", ephemeral=True)
             return
-
         channel = interaction.user.voice.channel
         if interaction.guild.voice_client is None:
             await channel.connect()
@@ -61,7 +63,12 @@ class Music(commands.Cog):
         vc = interaction.guild.voice_client
 
         if not vc.is_playing():
-            vc.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next(interaction.guild.id, channel), self.bot.loop))
+            vc.play(
+                source,
+                after=lambda e: asyncio.run_coroutine_threadsafe(
+                    self.play_next(interaction.guild.id, channel), self.bot.loop
+                )
+            )
             embed = discord.Embed(title="🎶 Now Playing", description=f"**{info['title']}**", color=discord.Color.green())
             await interaction.response.send_message(embed=embed)
         else:
@@ -84,12 +91,9 @@ class Music(commands.Cog):
         vc = interaction.guild.voice_client
         if vc and vc.is_playing():
             vc.stop()
-            embed = discord.Embed(description="⏭️ Skipped the current song.", color=discord.Color.orange())
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message("⏭️ Skipped the current song.", ephemeral=True)
         else:
-            await interaction.response.send_message(embed=discord.Embed(
-                description="Nothing is playing right now :<.", color=discord.Color.red()
-            ), ephemeral=True)
+            await interaction.response.send_message("Nothing is playing right now.", ephemeral=True)
 
     @app_commands.command(name="stop", description="Stop music and clear queue")
     async def stop(self, interaction: discord.Interaction):
@@ -97,27 +101,27 @@ class Music(commands.Cog):
         if vc:
             vc.stop()
             self.music_queues[interaction.guild.id] = []
-            embed = discord.Embed(description="⏹ Stopped the music and cleared the queue. :>", color=discord.Color.red())
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message("⏹ Stopped music and cleared queue.", ephemeral=True)
         else:
-            await interaction.response.send_message(embed=discord.Embed(
-                description="I'm not in a voice channel :<.", color=discord.Color.red()
-            ), ephemeral=True)
+            await interaction.response.send_message("I'm not in a voice channel.", ephemeral=True)
 
-    @app_commands.command(name="leave", description="Disconnect from voice channel :<")
+    @app_commands.command(name="leave", description="Disconnect from voice channel")
     async def leave(self, interaction: discord.Interaction):
         vc = interaction.guild.voice_client
         if vc:
             await vc.disconnect()
             self.music_queues[interaction.guild.id] = []
-            embed = discord.Embed(description=" Disconnected and cleared queue :<.", color=discord.Color.red())
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message("Disconnected and cleared queue.", ephemeral=True)
         else:
-            await interaction.response.send_message(embed=discord.Embed(
-                description="I'm not in a voice channel >:V.", color=discord.Color.red()
-            ), ephemeral=True)
+            await interaction.response.send_message("I'm not in a voice channel.", ephemeral=True)
 
+    # --- Register commands instantly for test guild ---
+    @commands.Cog.listener()
+    async def on_ready(self):
+        guild = discord.Object(id=TEST_GUILD_ID)
+        self.bot.tree.copy_global_to(guild=guild)
+        await self.bot.tree.sync(guild=guild)
+        print("[DEBUG] Music commands synced to test guild")
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
-# End of music.py
