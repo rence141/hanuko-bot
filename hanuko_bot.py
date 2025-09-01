@@ -27,7 +27,7 @@ initial_extensions = [
     "cogs.pets",
     "cogs.teams", 
     "cogs.misc",
-    "cogs.roles"
+    "cogs.roles",
     "cogs.music",
     "cogs.recommendation",
 ]

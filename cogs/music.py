@@ -1,7 +1,15 @@
 # music.py
+from discord.ext import commands, tasks
 import discord
-from discord.ext import commands
 from discord import app_commands
+
+# Try to import config, fall back to config_fallback if not available
+try:
+    import config
+except ImportError:
+    import config_fallback as config
+
+    
 import yt_dlp
 import asyncio
 
