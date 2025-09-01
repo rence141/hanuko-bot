@@ -21,7 +21,7 @@ class Music(commands.Cog):
         return self.music_queues.setdefault(guild_id, [])
 
     def get_audio_source(self, url: str):
-        # Updated yt-dlp options to handle bot detection
+        # Updated yt-dlp options for streaming like other Discord bots
         ydl_opts = {
             "format": "bestaudio/best",
             "noplaylist": True,
@@ -41,13 +41,14 @@ class Music(commands.Cog):
         }
         
         ffmpeg_opts = {
-            "options": "-vn -b:a 192k"
+            "options": "-vn -b:a 192k -bufsize 3072k"
         }
         
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 if info:
+                    # Use FFmpegPCMAudio for streaming (like other Discord bots)
                     return discord.FFmpegPCMAudio(info["url"], **ffmpeg_opts), info
                 else:
                     raise Exception("Could not extract video info")
@@ -62,7 +63,7 @@ class Music(commands.Cog):
                         return discord.FFmpegPCMAudio(info["url"], **ffmpeg_opts), info
             except Exception as e2:
                 print(f"[DEBUG] Second attempt failed: {e2}")
-                raise Exception(f"Failed to download video: {str(e2)}")
+                raise Exception(f"Failed to stream video: {str(e2)}")
 
     async def play_next(self, guild_id, channel):
         queue = self.get_queue(guild_id)
@@ -80,13 +81,46 @@ class Music(commands.Cog):
                 await channel.send(embed=embed)
             except Exception as e:
                 print(f"[ERROR] Error playing next song: {e}")
-                await channel.send(f" Error playing song >:V {title}")
+                await channel.send(f"❌ Error playing song: {title}")
                 # Try to play next song
                 await self.play_next(guild_id, channel)
         else:
             embed = discord.Embed(title="Queue Finished", description="No more songs in the queue! Leaving voice channel.", color=discord.Color.red())
             await channel.send(embed=embed)
             await vc.disconnect()
+
+    async def check_empty_voice_channel(self, guild):
+        """Check if voice channel is empty and leave if so"""
+        vc = guild.voice_client
+        if vc and vc.channel:
+            # Count non-bot users in the voice channel
+            members = [m for m in vc.channel.members if not m.bot]
+            if len(members) == 0:
+                embed = discord.Embed(title="👋 Auto-Disconnect", description="No users in voice channel. Leaving automatically.", color=discord.Color.orange())
+                try:
+                    await vc.channel.send(embed=embed)
+                except:
+                    pass
+                await vc.disconnect()
+                # Clear the queue
+                if guild.id in self.music_queues:
+                    self.music_queues[guild.id] = []
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        """Auto-leave when no users are in voice channel"""
+        if member.bot:
+            return
+            
+        # Check if someone left a voice channel
+        if before.channel and not after.channel:
+            # Someone left a voice channel, check if it's empty now
+            await self.check_empty_voice_channel(member.guild)
+        
+        # Check if someone joined a voice channel (in case bot was alone)
+        elif not before.channel and after.channel:
+            # Someone joined, but we still need to check if bot should leave
+            await self.check_empty_voice_channel(member.guild)
 
     # --- Slash Commands ---
     @app_commands.command(name="play", description="Play a YouTube song (adds to queue)")
@@ -117,8 +151,8 @@ class Music(commands.Cog):
                     )
                 else:
                     await interaction.followup.send(
-                        f"❌ **Download Error**\n"
-                        f"Could not download the video: {error_msg}\n\n"
+                        f"❌ **Streaming Error**\n"
+                        f"Could not stream the video: {error_msg}\n\n"
                         f"**Possible solutions:**\n"
                         f"• Check if the URL is valid\n"
                         f"• Try a different video\n"
