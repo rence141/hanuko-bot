@@ -11,9 +11,6 @@ try:
 except ImportError:
     import config_fallback as config
 
-# Replace with your test server (guild) ID
-TEST_GUILD_ID = 123456789012345678  # <- Replace with your actual Discord server ID
-
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -48,7 +45,7 @@ class Music(commands.Cog):
             await channel.send(embed=embed)
             await vc.disconnect()
 
-    # --- Guild-Specific Slash Commands ---
+    # --- Slash Commands ---
     @app_commands.command(name="play", description="Play a YouTube song (adds to queue)")
     async def play(self, interaction: discord.Interaction, url: str):
         if not interaction.user.voice:
@@ -116,8 +113,4 @@ class Music(commands.Cog):
             await interaction.response.send_message("I'm not in a voice channel.", ephemeral=True)
 
 async def setup(bot):
-    # Create a test guild object for guild-specific commands
-    test_guild = discord.Object(id=TEST_GUILD_ID)
-    
-    # Add the cog with guild-specific commands
-    await bot.add_cog(Music(bot), guild=test_guild)
+    await bot.add_cog(Music(bot))

@@ -9,9 +9,6 @@ try:
 except ImportError:
     import config_fallback as config
 
-# Replace with your test server (guild) ID
-TEST_GUILD_ID = 123456789012345678  # <- put your server ID here
-
 class Recommendation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -53,14 +50,6 @@ class Recommendation(commands.Cog):
         await interaction.response.send_message(
             f"✅ Your recommendation has been added to {channel.mention}!", ephemeral=True
         )
-
-    # --- Register commands instantly for test guild ---
-    @commands.Cog.listener()
-    async def on_ready(self):
-        guild = discord.Object(id=TEST_GUILD_ID)
-        self.bot.tree.copy_global_to(guild=guild)
-        await self.bot.tree.sync(guild=guild)
-        print("[DEBUG] Recommendation commands synced to test guild")
 
 async def setup(bot):
     await bot.add_cog(Recommendation(bot))
