@@ -28,18 +28,17 @@ class Recommendation(commands.Cog):
         url: str,
         channel: discord.TextChannel
     ):
-        """Send the recommendation as an embed with link preview."""
-        # Build an embed that shows the URL and who recommended it
-        embed = discord.Embed(
-            title=f"🎵 Recommended by {interaction.user.display_name}",
-            description=url,
-            color=discord.Color.green()
+        """Send the recommendation in a way that Discord auto-embeds the link (playable)."""
+        # To get a playable preview, the URL must be in the message content (not only inside an embed)
+        message_content = (
+            f"🎵 Recommended by {interaction.user.mention}\n{url}"
         )
-        embed.set_footer(text=f"Recommended in {channel.name}")
-        embed.set_author(name=interaction.user.name, icon_url=interaction.user.display_avatar.url)
 
-        # Send embed to the target channel
-        await channel.send(embed=embed)
+        # Avoid pinging the recommender while still showing a mention
+        await channel.send(
+            message_content,
+            allowed_mentions=discord.AllowedMentions.none()
+        )
         
         # Respond ephemerally to the user
         await interaction.response.send_message(
