@@ -12,43 +12,38 @@ except ImportError:
 class Recommendation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.recommendations = {}  # {guild_id: [(user, url)]}
         print("[DEBUG] Recommendation cog initialized")
 
-    def get_recommendations(self, guild_id):
-        return self.recommendations.setdefault(guild_id, [])
-
-    @app_commands.command(name="recommend", description="Recommend a song in a text channel")
+    @app_commands.command(
+        name="recommend",
+        description="Recommend a song in a text channel"
+    )
     @app_commands.describe(
         url="The YouTube/Spotify/etc. link you want to recommend",
         channel="The channel where the recommendation will appear"
     )
     async def recommend(
-        self, 
-        interaction: discord.Interaction, 
-        url: str, 
+        self,
+        interaction: discord.Interaction,
+        url: str,
         channel: discord.TextChannel
     ):
-        guild = interaction.guild
-        recs = self.get_recommendations(guild.id)
-        recs.append((interaction.user.mention, url))
-        if len(recs) > 10:
-            recs.pop(0)  # Remove oldest
-
-        # Clear old bot messages in the chosen channel
-        async for msg in channel.history(limit=100):
-            if msg.author == self.bot.user:
-                await msg.delete()
-
+        """Send the recommendation as an embed with link preview."""
+        # Build an embed that shows the URL and who recommended it
         embed = discord.Embed(
-            title="🎵 Music Recommendations (Latest 10)", color=discord.Color.green()
+            title=f"🎵 Recommended by {interaction.user.display_name}",
+            description=url,
+            color=discord.Color.green()
         )
-        for i, (user, song_url) in enumerate(recs, 1):
-            embed.add_field(name=f"{i}. {user}", value=song_url, inline=False)
+        embed.set_footer(text=f"Recommended in {channel.name}")
+        embed.set_author(name=interaction.user.name, icon_url=interaction.user.display_avatar.url)
 
+        # Send embed to the target channel
         await channel.send(embed=embed)
+        
+        # Respond ephemerally to the user
         await interaction.response.send_message(
-            f"✅ Your recommendation has been added to {channel.mention}!", ephemeral=True
+            f"✅ Your recommendation has been sent to {channel.mention}!", ephemeral=True
         )
 
 async def setup(bot):

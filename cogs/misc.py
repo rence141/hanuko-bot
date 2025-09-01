@@ -469,12 +469,6 @@ class Misc(commands.Cog):
             ("/return", "Manually return from AFK status."),
             ("/afklist", "Show all currently AFK users."),
             
-            # Music
-            ("/play", "Play a YouTube song (adds to queue)."),
-            ("/queue", "Show current music queue."),
-            ("/skip", "Skip the current song."),
-            ("/stop", "Stop music and clear queue."),
-            ("/leave", "Disconnect from voice channel."),
             
             # Polls
             ("/poll", "Create a poll with multiple options."),
@@ -545,8 +539,6 @@ class Misc(commands.Cog):
             embed.add_field(name="__Events__", value="/containmentsuit\n/claimvault", inline=False)
             # AFK System
             embed.add_field(name="__AFK System__", value="/afk, /return, /afklist", inline=False)
-            # Music
-            embed.add_field(name="__Music__", value="/play, /queue, /skip, /stop, /leave", inline=False)
             # Polls
             embed.add_field(name="__Polls__", value="/poll, /vote, /pollresults\n/endpoll, /listpolls", inline=False)
             # Utility
@@ -633,12 +625,6 @@ class Misc(commands.Cog):
             "return": "Manually return from AFK status. Usage: /return",
             "afklist": "Show all currently AFK users. Usage: /afklist",
             
-            # Music
-            "play": "Play a YouTube song (adds to queue). Usage: /play url:<youtube_url>",
-            "queue": "Show current music queue. Usage: /queue",
-            "skip": "Skip the current song. Usage: /skip",
-            "stop": "Stop music and clear queue. Usage: /stop",
-            "leave": "Disconnect from voice channel. Usage: /leave",
             
             # Polls
             "poll": "Create a poll with multiple options. Usage: /poll question:<question> options:<option1,option2,...> [duration:<time>]",
